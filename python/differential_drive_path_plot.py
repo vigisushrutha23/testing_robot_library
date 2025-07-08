@@ -64,11 +64,19 @@ ax1.set_xlabel('X Position')
 ax1.set_ylabel('Y Position')
 ax1.set_title('Cartesian Path')
 ax1.legend()
-ax1.axis('equal')
 
 for i in range(obs_xcoord_actual.shape[0]):
-        ellipse = Ellipse(xy=(obs_xcoord_actual[i],obs_ycoord_actual[i]),width=2*obs_ax_actual[i],height=2*obs_ax_actual[i], angle=0.0, edgecolor='r', lw=2, facecolor='none')
+        ellipse = Ellipse(xy=(obs_xcoord_actual[i],obs_ycoord_actual[i]),width=2*obs_ax_actual[i],height=2*obs_ax_actual[i], angle=0.0, edgecolor='g', lw=2, facecolor='none')
         ax1.add_patch(ellipse)
+
+for i in range(x_actual.shape[0]):
+        if i%30 ==0 or i==x_actual.shape[0]-1:
+            ellipse = Ellipse(xy=(x_actual[i],y_actual[i]),width=0.6,height=0.4, angle=np.rad2deg(heading_actual[i]-np.pi/2), edgecolor='b', lw=2, facecolor='none')
+            ax1.add_patch(ellipse)
+
+
+ax1.axis('equal')
+
 
 # Load control input data
 control_csv_path = os.path.join(script_dir, '..', 'build', 'control_input_data.csv')
