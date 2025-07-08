@@ -9,6 +9,7 @@ Created on Fri May 16 14:37:03 2025
 import matplotlib.pyplot as plt
 import os
 import numpy as np
+from matplotlib.patches import Ellipse
 
 # Get the directory of the current script
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -27,6 +28,15 @@ actual_data = np.loadtxt(actual_csv_path, delimiter=',')
 x_actual = actual_data[:, 1]
 y_actual = actual_data[:, 2]
 heading_actual = actual_data[:, 3]
+
+# Load Obstaccle Data
+obstacle_data_path = os.path.join(script_dir, '..', 'build', 'obstacle_data.csv')
+obstacle_data = np.loadtxt(obstacle_data_path, delimiter=',')
+obs_xcoord_actual = obstacle_data[:,0]
+obs_ycoord_actual = obstacle_data[:,1]
+obs_ax_actual = obstacle_data[:,2]
+obs_ay_actual = obstacle_data[:,3]
+
 
 # Plot desired and actual paths
 fig1, ax1 = plt.subplots()
@@ -55,6 +65,10 @@ ax1.set_ylabel('Y Position')
 ax1.set_title('Cartesian Path')
 ax1.legend()
 ax1.axis('equal')
+
+for i in range(obs_xcoord_actual.shape[0]):
+        ellipse = Ellipse(xy=(obs_xcoord_actual[i],obs_ycoord_actual[i]),width=2*obs_ax_actual[i],height=2*obs_ax_actual[i], angle=0.0, edgecolor='r', lw=2, facecolor='none')
+        ax1.add_patch(ellipse)
 
 # Load control input data
 control_csv_path = os.path.join(script_dir, '..', 'build', 'control_input_data.csv')

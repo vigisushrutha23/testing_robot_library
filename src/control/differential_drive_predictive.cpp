@@ -42,6 +42,8 @@ int main(int argc, char **argv)
     modelParameters.maxLinearAcceleration  = 1.0;                                                   // Maximum forward acceleration (m/s/s)
     modelParameters.maxLinearVelocity      = 2.0;                                                   // Maximum forward speed (m/s)
     modelParameters.propagationUncertainty = Eigen::Matrix3d::Identity();                           // Uncertainty of configuration propagation in Kalman filter
+    modelParameters.robotRadii  << 0.15,0.2,0.15;
+    modelParameters.robotFootprint << -0.2,0.0,0.2;
     
     // Parameters for the QP solver
     SolverOptions<double> solverOptions;
@@ -58,15 +60,15 @@ int main(int argc, char **argv)
     controlParameters.numberOfRecursions     = 2;                                                   // No. of forward & backward passes for the DDP algorithm
     controlParameters.predictionSteps        = predictionSteps;                                     // Length of prediction horizon
    
-    controlParameters.poseErrorWeight << 500.0,   0.0, 0.0,
-                                           0.0, 500.0, 0.9,
+    controlParameters.poseErrorWeight << 5.0,   0.0, 0.0,
+                                           0.0,   5.0, 0.9,
                                            0.0,   0.9, 1.0;
     
     RobotLibrary::Control::DifferentialDrivePredictive controller(modelParameters,
                                                                   controlParameters,
                                                                   solverOptions);
  
-    RobotLibrary::Model::Pose2D actualPose(-0.2, 0.2, 0.5);                                        // Start offset from the trajectory
+    RobotLibrary::Model::Pose2D actualPose(-0.2, 0.2, M_PI/2);                                        // Start offset from the trajectory
     
     Eigen::Vector2d controlInput = {0.0, 0.0};
     
@@ -74,6 +76,17 @@ int main(int argc, char **argv)
     
     // Set up obstacle(s)
     std::vector<std::vector<RobotLibrary::Math::Ellipsoid<2>>> obstacles;
+        
+    //Temporarily setup one or two stationary obstacles.
+    obstacles.resize(1);
+    Eigen::Matrix2d temp_rot = Eigen::MatrixXd::Identity(2,2);
+    Eigen::Vector2d temp_centre,temp_axes;
+    temp_centre << -0.7, 0.5;
+    temp_axes << 0.2, 0.1;
+
+    RobotLibrary::Math::Ellipsoid<2> temp_obstacle(temp_centre,temp_rot,temp_axes);
+    for(int i = 0; i < predictionSteps; i++)
+      obstacles[0].push_back(temp_obstacle);   
        
     // Set up data arrays for analysis
     std::vector<std::array<double,3>> desiredConfiguration; desiredConfiguration.resize(simulationSteps);
@@ -167,6 +180,15 @@ int main(int argc, char **argv)
     }
     file.close(); 
     
+    file.open("obstacle_data.csv");
+    for(int i = 0; i < obstacles.size(); i++)
+    {
+      for(int j = 0; j <obstacles[i].size(); j++)
+      {
+        file << obstacles[i][j].get_centre()(0)<<","<<obstacles[i][j].get_centre()(1)<<","<<obstacles[i][j].get_axes_lengths()(0)<<","<<obstacles[i][j].get_axes_lengths()(1);
+        file<<"\n";
+      }
+    }
     std::cout << "[INFO] [DIFFERENTIAL DRIVE PREDICTIVE CONTROL] Numerical simulation complete."
               << "Data saved to .csv files for analysis.\n";
 
