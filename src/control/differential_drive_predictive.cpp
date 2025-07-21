@@ -60,8 +60,8 @@ int main(int argc, char **argv)
     controlParameters.numberOfRecursions     = 5;                                                   // No. of forward & backward passes for the DDP algorithm
     controlParameters.predictionSteps        = predictionSteps;                                     // Length of prediction horizon
    
-    controlParameters.poseErrorWeight << 20.0,   0.0, 0.0,
-                                           0.0,   20.0, 0.1,
+    controlParameters.poseErrorWeight << 600.0,   0.0, 0.0,
+                                           0.0,   600.0, 0.1,
                                            0.0,   0.1, 0.1;
     
     RobotLibrary::Control::DifferentialDrivePredictive controller(modelParameters,
@@ -81,7 +81,7 @@ int main(int argc, char **argv)
     obstacles.resize(1);
     Eigen::Matrix2d temp_rot = Eigen::MatrixXd::Identity(2,2);
     Eigen::Vector2d temp_centre,temp_axes;
-    temp_centre << 0.70, 0.3;
+    temp_centre << 0.40, 0.3;
     temp_axes << 0.2, 0.1;
 
     RobotLibrary::Math::Ellipsoid<2> temp_obstacle(temp_centre,temp_rot,temp_axes);
