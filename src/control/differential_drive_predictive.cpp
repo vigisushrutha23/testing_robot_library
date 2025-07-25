@@ -48,20 +48,20 @@ int main(int argc, char **argv)
     // Parameters for the QP solver
     SolverOptions<double> solverOptions;
     solverOptions.barrierReductionRate = 1e-02;
-    solverOptions.initialBarrierScalar = 100;
+    solverOptions.initialBarrierScalar = 1000;
     solverOptions.stepSizeTolerance    = 1e-08;                                                     // This should be very small
-    solverOptions.maxSteps             = 5;
+    solverOptions.maxSteps             = 10;
     
     // Parameters for the predictive controller
     RobotLibrary::Control::DifferentialDrivePredictiveParameters controlParameters;
     controlParameters.controlFrequency       = controlFrequency;
-    controlParameters.exponent               = -0.05;                                               // Growth or decay of pose error weighting
+    controlParameters.exponent               = 0.0;                                               // Growth or decay of pose error weighting
     controlParameters.maximumControlStepNorm = 1e-06;                                               // DDP algorithm terminates early if max. ||du|| is smaller than this
-    controlParameters.numberOfRecursions     = 5;                                                   // No. of forward & backward passes for the DDP algorithm
+    controlParameters.numberOfRecursions     = 10;                                                   // No. of forward & backward passes for the DDP algorithm
     controlParameters.predictionSteps        = predictionSteps;                                     // Length of prediction horizon
    
-    controlParameters.poseErrorWeight << 600.0,   0.0, 0.0,
-                                           0.0,   600.0, 0.1,
+    controlParameters.poseErrorWeight << 200.0,   0.0, 0.0,
+                                           0.0,   200.0, 0.1,
                                            0.0,   0.1, 0.1;
     
     RobotLibrary::Control::DifferentialDrivePredictive controller(modelParameters,
@@ -81,12 +81,12 @@ int main(int argc, char **argv)
     obstacles.resize(1);
     Eigen::Matrix2d temp_rot = Eigen::MatrixXd::Identity(2,2);
     Eigen::Vector2d temp_centre,temp_axes;
-    temp_centre << 0.40, 0.3;
-    temp_axes << 0.2, 0.1;
+    temp_centre << 0.5, 0.4;
+    temp_axes << 0.3, 0.1;
 
     RobotLibrary::Math::Ellipsoid<2> temp_obstacle(temp_centre,temp_rot,temp_axes);
     for(int i = 0; i < predictionSteps; i++)
-      obstacles[0].push_back(temp_obstacle);   
+     obstacles[0].push_back(temp_obstacle);   
        
     // Set up data arrays for analysis
     std::vector<std::array<double,3>> desiredConfiguration; desiredConfiguration.resize(simulationSteps);
