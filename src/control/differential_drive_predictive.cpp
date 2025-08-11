@@ -35,8 +35,8 @@ int main(int argc, char **argv)
     
     // Parameters for the model
     RobotLibrary::Model::DifferentialDriveParameters modelParameters;
-    modelParameters.inertia                = 0.5 * 5.0 * 0.25 * 0.25;                              // Rotational inertia (kg*m^2)
-    modelParameters.mass                   = 5.0;                                                  // Weight (kg)
+    modelParameters.inertia                = 0.5 * 1.0 * 0.25 * 0.25;                              // Rotational inertia (kg*m^2)
+    modelParameters.mass                   = 1.0;                                                  // Weight (kg)
     modelParameters.maxAngularAcceleration = 4.0;                                                   // Maximum rotational acceleration (rad/s/s)
     modelParameters.maxAngularVelocity     = 100.0 * M_PI / 30.0;                                   // Maximum rotational speed (rad/s)
     modelParameters.maxLinearAcceleration  = 1.0;                                                   // Maximum forward acceleration (m/s/s)
@@ -81,8 +81,8 @@ int main(int argc, char **argv)
     obstacles.resize(1);
     Eigen::Matrix2d temp_rot = Eigen::MatrixXd::Identity(2,2);
     Eigen::Vector2d temp_centre,temp_axes;
-    temp_centre << 0.5, 0.4;
-    temp_axes << 0.3, 0.1;
+    temp_centre << -0.8, 0.55;
+    temp_axes << 0.2, 0.1;
 
     RobotLibrary::Math::Ellipsoid<2> temp_obstacle(temp_centre,temp_rot,temp_axes);
     for(int i = 0; i < predictionSteps; i++)
@@ -94,8 +94,9 @@ int main(int argc, char **argv)
     std::vector<std::array<double,2>> poseError; poseError.resize(simulationSteps);
     std::vector<std::array<double,2>> controlInputs; controlInputs.resize(simulationSteps);
     
+    bool full_computation_failure = false;
     // Run the simulation
-    for (int i = 0; i < simulationSteps; ++i)
+    for (int i = 0; i < simulationSteps && !full_computation_failure; ++i)
     {
         double simTime = i / controlFrequency;
         
@@ -123,21 +124,29 @@ int main(int argc, char **argv)
             throw std::runtime_error("[ERROR] [DIFFERENTIAL DRIVE PREDICTIVE CONTROL] "
                                      "Failed to solve trajectory tracking:\n"
                                      + std::string(exception.what()));
+            full_computation_failure = true;
              
-             return -1;
+             
         }
-        
+        //if(controlInput(0)==-1000.0 )
+         // full_computation_failure = true;
         // Save data for future analysis
-        desiredConfiguration[i] = {desiredStates[0].pose.translation()[0], desiredStates[0].pose.translation()[1], desiredStates[0].pose.angle()};
-        actualConfiguration[i]  = {actualPose.translation()[0], actualPose.translation()[1], actualPose.angle()};
-        poseError[i]            = {(desiredStates[0].pose.translation() - controller.pose().translation()).norm(), abs(desiredStates[0].pose.angle() - controller.pose().angle())};                   
-        controlInputs[i]        = {controlInput[0], controlInput[1]};
+        if(!full_computation_failure)
+        {
+          desiredConfiguration[i] = {desiredStates[0].pose.translation()[0], desiredStates[0].pose.translation()[1], desiredStates[0].pose.angle()};
+          actualConfiguration[i]  = {actualPose.translation()[0], actualPose.translation()[1], actualPose.angle()};
+          poseError[i]            = {(desiredStates[0].pose.translation() - controller.pose().translation()).norm(), abs(desiredStates[0].pose.angle() - controller.pose().angle())};                   
+          controlInputs[i]        = {controlInput[0], controlInput[1]};
+          
+          // For next loop
+          controller.update_state(actualPose, controlInput);
+          actualPose = controller.predicted_pose(); // Propagate the state
         
-        // For next loop
-        controller.update_state(actualPose, controlInput);
-        actualPose = controller.predicted_pose();                                                   // Propagate the state
+        }
+
     }
-    
+    std::cout<<"\n Out of loop 1";
+    std::cout<<"\n Out of loop32";
     std::ofstream file;
  
     // Save the trajectory data
