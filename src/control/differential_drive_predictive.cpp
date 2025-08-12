@@ -24,7 +24,7 @@
 double simulationTime = 10;
 double controlFrequency = 100.0;
 unsigned int simulationSteps = 1000;
-unsigned int predictionSteps = 200;
+unsigned int predictionSteps = 50;
 
 int main(int argc, char **argv)
 {   
@@ -81,7 +81,7 @@ int main(int argc, char **argv)
     obstacles.resize(1);
     Eigen::Matrix2d temp_rot = Eigen::MatrixXd::Identity(2,2);
     Eigen::Vector2d temp_centre,temp_axes;
-    temp_centre << -0.8, 0.55;
+    temp_centre << -0.8, 0.6;
     temp_axes << 0.2, 0.1;
 
     RobotLibrary::Math::Ellipsoid<2> temp_obstacle(temp_centre,temp_rot,temp_axes);
