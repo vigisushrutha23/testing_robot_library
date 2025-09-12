@@ -73,7 +73,12 @@ if obstacle_data.shape[0] >0:
 
 for i in range(x_actual.shape[0]):
         if i%30 ==0 or i==x_actual.shape[0]-1:
-            ellipse = Ellipse(xy=(x_actual[i],y_actual[i]),width=0.6,height=0.4, angle=np.rad2deg(heading_actual[i]-np.pi/2), edgecolor='b', lw=2, facecolor='none')
+            color='b'
+            if i==0:
+                   color = 'g'
+            if i==x_actual.shape[0]-1:
+                   color = 'r'     
+            ellipse = Ellipse(xy=(x_actual[i],y_actual[i]),width=0.6,height=0.4, angle=np.rad2deg(heading_actual[i]-np.pi/2), edgecolor=color, lw=2, facecolor='none')
             ax1.add_patch(ellipse)
 
 
