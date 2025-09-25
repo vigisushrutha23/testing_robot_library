@@ -21,10 +21,14 @@
 #include <RobotLibrary/Trajectory/MinimumArcLength.h>
 
 // Simulation parameters
-double simulationTime = 10;
+double simulationTime = 8.0;
 double controlFrequency = 100.0;
 unsigned int simulationSteps = 1000;
+<<<<<<< HEAD
 unsigned int predictionSteps = 50;
+=======
+unsigned int predictionSteps = 100;
+>>>>>>> upstream/devel
 
 int main(int argc, char **argv)
 {   
@@ -35,12 +39,22 @@ int main(int argc, char **argv)
     
     // Parameters for the model
     RobotLibrary::Model::DifferentialDriveParameters modelParameters;
+<<<<<<< HEAD
     modelParameters.inertia                = 0.5 * 1.0 * 0.25 * 0.25;                              // Rotational inertia (kg*m^2)
     modelParameters.mass                   = 1.0;                                                  // Weight (kg)
     modelParameters.maxAngularAcceleration = 32.0;                                                   // Maximum rotational acceleration (rad/s/s)
     modelParameters.maxAngularVelocity     = 800.0 * M_PI / 30.0;                                   // Maximum rotational speed (rad/s)
     modelParameters.maxLinearAcceleration  = 20.0;                                                   // Maximum forward acceleration (m/s/s)
     modelParameters.maxLinearVelocity      = 40.0;                                                   // Maximum forward speed (m/s)
+=======
+    modelParameters.inertia                = 0.5 * 50.0 * 0.25 * 0.25;                              // Rotational inertia (kg*m^2)
+    modelParameters.mass                   = 50.0;                                                  // Weight (kg)
+    modelParameters.maxAngularAcceleration = 5.0;                                                   // Maximum rotational acceleration (rad/s/s)
+    modelParameters.maxAngularVelocity     = 100.0 * M_PI / 30.0;                                   // Maximum rotational speed (rad/s)
+    modelParameters.maxLinearAcceleration  = 2.0;                                                   // Maximum forward acceleration (m/s/s)
+    modelParameters.maxLinearVelocity      = 1.0;                                                   // Maximum forward speed (m/s)
+    modelParameters.minimumSafeDistance    = 0.5;
+>>>>>>> upstream/devel
     modelParameters.propagationUncertainty = Eigen::Matrix3d::Identity();                           // Uncertainty of configuration propagation in Kalman filter
     modelParameters.robotRadii  << 0.15,0.2,0.15;
     modelParameters.robotFootprint << -0.2,0.0,0.2;
@@ -55,6 +69,7 @@ int main(int argc, char **argv)
     // Parameters for the predictive controller
     RobotLibrary::Control::DifferentialDrivePredictiveParameters controlParameters;
     controlParameters.controlFrequency       = controlFrequency;
+<<<<<<< HEAD
     controlParameters.exponent               = 0.0;                                               // Growth or decay of pose error weighting
     controlParameters.maximumControlStepNorm = 1e-06;                                               // DDP algorithm terminates early if max. ||du|| is smaller than this
     controlParameters.numberOfRecursions     = 10;                                                   // No. of forward & backward passes for the DDP algorithm
@@ -63,18 +78,33 @@ int main(int argc, char **argv)
     controlParameters.poseErrorWeight << 70.0,   0.0, 0.0,
                                            0.0,   70.0, 0.1,
                                            0.0,   0.1, 0.1;
+=======
+    controlParameters.exponent               =  0.01;                                               // Growth or decay of pose error weighting
+    controlParameters.maximumControlStepNorm = 1e-06;                                               // DDP algorithm terminates early if max. ||du|| is smaller than this
+    controlParameters.numberOfRecursions     = 10;                                                  // No. of forward & backward passes for the DDP algorithm
+    controlParameters.predictionSteps        = predictionSteps;                                     // Length of prediction horizon
+   
+    controlParameters.poseErrorWeight << 8000.0,    0.0,  0.0,
+                                            0.0, 8000.0,  4.0,
+                                            0.0,    4.0,  5.0;
+>>>>>>> upstream/devel
     
     RobotLibrary::Control::DifferentialDrivePredictive controller(modelParameters,
                                                                   controlParameters,
                                                                   solverOptions);
  
+<<<<<<< HEAD
     RobotLibrary::Model::Pose2D actualPose(-0.2, 0.2, M_PI/2);                                        // Start offset from the trajectory
+=======
+    RobotLibrary::Model::Pose2D actualPose(-0.0, 0.0, 0.0);                                         // Start offset from the trajectory
+>>>>>>> upstream/devel
     
     Eigen::Vector2d controlInput = {0.0, 0.0};
     
     controller.update_state(actualPose, controlInput);
     
     // Set up obstacle(s)
+<<<<<<< HEAD
     std::vector<std::vector<RobotLibrary::Math::Ellipsoid<2>>> obstacles;
         
     //Temporarily setup one or two stationary obstacles.
@@ -88,11 +118,27 @@ int main(int argc, char **argv)
     for(int i = 0; i < predictionSteps; i++)
      obstacles[0].push_back(temp_obstacle);   
      
+=======
+    std::vector<std::vector<RobotLibrary::Math::Ellipsoid<2>>> obstacles(1);                        // Only 1 obstacle to start
+    
+    double xSemiAxis = 0.25;
+    double ySemiAxis = 0.25;
+    Eigen::Matrix2d shapeMatrix; shapeMatrix << xSemiAxis * xSemiAxis, 0.0,
+                                                                  0.0, ySemiAxis * ySemiAxis; 
+    Eigen::Vector2d centre = {0.58, 0.25};
+    
+    for (int j = 0; j < predictionSteps + 1; ++j)
+    {
+        obstacles[0].emplace_back(RobotLibrary::Math::Ellipsoid<2>(centre, shapeMatrix));
+    }
+       
+>>>>>>> upstream/devel
     // Set up data arrays for analysis
-    std::vector<std::array<double,3>> desiredConfiguration; desiredConfiguration.resize(simulationSteps);
-    std::vector<std::array<double,3>> actualConfiguration; actualConfiguration.resize(simulationSteps);
-    std::vector<std::array<double,2>> poseError; poseError.resize(simulationSteps);
-    std::vector<std::array<double,2>> controlInputs; controlInputs.resize(simulationSteps);
+    std::vector<std::array<double,3>> desiredConfiguration;  desiredConfiguration.resize(simulationSteps);
+    std::vector<std::array<double,3>> actualConfiguration;   actualConfiguration.resize(simulationSteps);
+    std::vector<std::array<double,2>> poseError;             poseError.resize(simulationSteps);
+    std::vector<std::array<double,2>> controlInputs;         controlInputs.resize(simulationSteps);
+    std::vector<std::vector<double>> predictedConfiguration; predictedConfiguration.resize(simulationSteps);
     
     bool full_computation_failure = false;
     // Run the simulation
@@ -103,7 +149,7 @@ int main(int argc, char **argv)
         // Query the desired state from the trajectory across the control horizon
         std::vector<RobotLibrary::Model::DifferentialDriveState> desiredStates;
         
-        for (int j = 0; j < predictionSteps + 1; ++j)
+        for (int j = 0; j <= predictionSteps; ++j)
         {
             const auto &[pos, vel, acc] = trajectory.query_state(simTime + j / controlFrequency);   // Sample the trajectory across the horizon
          
@@ -127,6 +173,10 @@ int main(int argc, char **argv)
             full_computation_failure = true;
              
              
+<<<<<<< HEAD
+=======
+             break;
+>>>>>>> upstream/devel
         }
         //if(controlInput(0)==-1000.0 )
          // full_computation_failure = true;
@@ -142,8 +192,19 @@ int main(int argc, char **argv)
           controller.update_state(actualPose, controlInput);
           actualPose = controller.predicted_pose(); // Propagate the state
         
+<<<<<<< HEAD
         }
 
+=======
+        for( int j = 0; j < predictionSteps; ++j)
+        {
+        
+        }
+        
+        // For next loop
+        controller.update_state(actualPose, controlInput);
+        actualPose = controller.predicted_pose();                                                   // Propagate the state
+>>>>>>> upstream/devel
     }
     std::cout<<"\n Out of loop 1";
     std::cout<<"\n Out of loop32";
@@ -187,8 +248,9 @@ int main(int argc, char **argv)
         for(int j = 0; j < 2; ++j) file << "," << poseError[i][j];
         file << "\n";
     }
-    file.close(); 
+    file.close();
     
+<<<<<<< HEAD
     file.open("obstacle_data.csv");
     for(int i = 0; i < obstacles.size(); i++)
     {
@@ -199,6 +261,18 @@ int main(int argc, char **argv)
       }
     }
     std::cout << "[INFO] [DIFFERENTIAL DRIVE PREDICTIVE CONTROL] Numerical simulation complete."
+=======
+    // Save the obstacle
+    file.open("obstacle_data.csv");
+    for(int i = 0; i < simulationSteps; ++i)
+    {
+        file << (double)(i / controlFrequency);
+        file << "," << obstacles[0][i].centre()[0] << "," << obstacles[0][i].centre()[1] << "," << xSemiAxis << "," << ySemiAxis << "\n";
+    }
+    file.close();
+    
+    std::cout << "[INFO] [DIFFERENTIAL DRIVE PREDICTIVE CONTROL] Numerical simulation complete. "
+>>>>>>> upstream/devel
               << "Data saved to .csv files for analysis.\n";
 
     return 0;                                                                                       // No problems with main

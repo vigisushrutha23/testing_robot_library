@@ -49,4 +49,9 @@ for i in range(0,3):
         ax[i].set_xticks([])
     else:
         ax[i].set_xlabel("Time (s)")
+
+ax[2].axhline(y = 0.01, color = [0.8, 0.2, 0.2], linestyle = '-') 
+
             
+matplotlib.pyplot.tight_layout()
+matplotlib.pyplot.show()

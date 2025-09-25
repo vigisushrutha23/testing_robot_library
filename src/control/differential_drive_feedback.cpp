@@ -17,6 +17,7 @@
 #include <fstream>                                                                                  // Reading and writing to files
 #include <iostream>  
 #include <RobotLibrary/Control/DifferentialDriveFeedback.h>
+#include <RobotLibrary/Math/Line.h>
 #include <RobotLibrary/Model/Pose2D.h>
 #include <RobotLibrary/Trajectory/MinimumArcLength.h>
 
@@ -45,12 +46,25 @@ int main(int argc, char **argv)
     // Parameters for the feedback controller
     RobotLibrary::Control::DifferentialDriveFeedbackParameters controlParameters;
     controlParameters.controlFrequency    = controlFrequency;
-    controlParameters.minimumSafeDistance =  1.0;
+    controlParameters.minimumSafeDistance =  0.1;
     controlParameters.orientationGain     = 10.0;
     controlParameters.xPositionGain       =  5.0;
     controlParameters.yPositionGain       = 50.0;
     
+    // These are for the QP solver
+    controlParameters.qpsolver.stepSizeTolerance = 1e-08;                                           // Needs to be very small for this low dimensional problem
+
     RobotLibrary::Control::DifferentialDriveFeedback controller(modelParameters, controlParameters);
+    
+    // Set up the obstacles
+    auto line = std::make_unique<RobotLibrary::Math::Line2D>(Eigen::Vector2d(1.0, 0.0));
+   
+    auto obstacle = RobotLibrary::Model::Obstacle2D(std::move(line));                               // Create obstacle
+    
+    obstacle.update_state(RobotLibrary::Model::Pose2D(0.0, 0.8, 0.0), Eigen::Vector3d::Zero());     // Set new pose (zero speed)
+    
+    std::vector<RobotLibrary::Model::Obstacle2D> obstacles;
+    obstacles.push_back(std::move(obstacle));
     
     // Set up data arrays
     std::vector<std::array<double,3>> desiredConfiguration(simulationSteps);
@@ -58,7 +72,7 @@ int main(int argc, char **argv)
     std::vector<std::array<double,2>> poseError(simulationSteps);
     std::vector<std::array<double,2>> controlInputs(simulationSteps);
     
-    RobotLibrary::Model::Pose2D actualPose(-0.2, 0.2, 0.17);                                        // Start offset from the trajectory
+    RobotLibrary::Model::Pose2D actualPose(0.0, 0.0, 0.0);                                        // Start offset from the trajectory
     
     Eigen::Vector2d controlInput = {0.0, 0.0};
     
@@ -79,7 +93,19 @@ int main(int argc, char **argv)
                                                 desiredPosition[1],
                                                 desiredPosition[2]);                                // We need to put it in a Pose2D object
         
-        controlInput = controller.track_trajectory(desiredPose, desiredVelocity);
+        // NOTE: QP solver can throw an error if no solution exists.
+        try
+        {
+            controlInput = controller.track_trajectory(desiredPose, desiredVelocity, obstacles);
+        }
+        catch (const std::exception &exception)
+        {
+            std::cout << exception.what() << "\n";
+            
+            break;
+        }
+        
+        std::cout << "Forward velocity: " << controlInput[0] << "\n";
     
         // Save data for analysis
         desiredConfiguration[i] = {desiredPosition[0], desiredPosition[1], desiredPosition[2]};
@@ -134,7 +160,7 @@ int main(int argc, char **argv)
     }
     file.close(); 
     
-    std::cout << "[INFO] [DIFFERENTIAL DRIVE FEEDBACK CONTROL] Numerical simulation complete."
+    std::cout << "[INFO] [DIFFERENTIAL DRIVE FEEDBACK CONTROL] Numerical simulation complete. "
               << "Data saved to .csv files for analysis.\n";
     
     return 0;                                                                                       // No problems with main

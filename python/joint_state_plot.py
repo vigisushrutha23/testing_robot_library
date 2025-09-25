@@ -45,7 +45,7 @@ for i in range(0,numberOfJoints):
             positionData["Joint " + str(i+1)][j] = 2*(pos-minimum)/raange - 1
     
 # Plot the data
-fig, ax = matplotlib.pyplot.subplots()                                         # Create figure object
+fig, ax = matplotlib.pyplot.subplots(dpi=100)                                         # Create figure object
 
 # Add reference lines to aid visual discrimination
 ax.axhline(y =  1.0, color = [0.8, 0.8, 0.8], linestyle = '-') 
@@ -64,8 +64,6 @@ ax.spines['right'].set_visible(False)                                          #
 ax.spines['bottom'].set_position(('data', -1))                                 # Set the intercept of the x and y axes
 ax.set_xlabel("Time (s)")                                                      # Label the bottom axis
 ax.set_yticks([-1,0,1])                                                        
-
-matplotlib.pyplot.show()
 
 ########################### Load the velocity data ############################
 
@@ -86,10 +84,10 @@ for i in range(0,len(velocityData.columns)-1):
     
 
 # Plot the data
-fig, ax = matplotlib.pyplot.subplots()                                         # Create figure object
+fig, ax = matplotlib.pyplot.subplots(dpi=100)                                         # Create figure object
 
 # Add reference lines to aid visual discrimination
-ax.axhline(y =  1.0, color = [0.8, 0.8, 0.8], linestyle = '-') 
+#ax.axhline(y =  1.0, color = [0.8, 0.8, 0.8], linestyle = '-') 
 
 # Plot each joint position vs. time
 for i in range(0,len(positionData.columns)-1):
@@ -104,3 +102,5 @@ ax.spines['right'].set_visible(False)                                          #
 ax.spines['bottom'].set_position(('data', -1))                                 # Set the intercept of the x and y axes
 ax.set_xlabel("Time (s)")                                                      # Label the bottom axis
 ax.set_yticks([-1,0,1])     
+
+matplotlib.pyplot.show()

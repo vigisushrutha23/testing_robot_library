@@ -1,9 +1,9 @@
 /**
- * @file    cartesian_control.cpp
+ * @file    cartesian_velocity_control.cpp
  * @author  Jon Woolfrey
  * @email   jonathan.woolfrey@gmail.com
- * @date    May 2025
- * @version 1.0
+ * @date    August 2025
+ * @version 1.1
  * @brief   Numerical simulation for Cartesian trajectory tracking of SerialLinkBase class in RobotLibrary.
  * 
  * @details This executable performs a numerical simulation to assess the joint trajectory tracking
@@ -19,58 +19,46 @@
 #include <Eigen/Core>                                                                               // Eigen::Vector, Eigen::Matrix classes
 #include <fstream>                                                                                  // Reading and writing to files
 #include <iostream>                                                                                 // std::cout, std::cerr
-#include <RobotLibrary/Control/SerialDynamicControl.h>                                              // Custom control class
-#include <RobotLibrary/Control/SerialKinematicControl.h>                                            // Custom control class
+#include <RobotLibrary/Control/SerialLinkKinematic.h>                                               // Custom control class
 #include <RobotLibrary/Trajectory/CartesianSpline.h>                                                // Custom trajectory generator
 #include <time.h> 
 
 // Parameters for the numerical simulation
-double simulationFrequency = 1000;
-unsigned int ratio         = 10;
-double controlFrequency    = simulationFrequency/ratio;
-double simulationDuration  = 3.0;
-unsigned int simulationSteps = simulationDuration*simulationFrequency;
+double       simulationFrequency = 1000;
+unsigned int ratio               = 1;
+double       controlFrequency    = simulationFrequency/ratio;
+double       simulationDuration  = 5.0;
+unsigned int simulationSteps     = simulationDuration*simulationFrequency;
 
 // Parameters for the trajectory
 double startTime = 0.0;
-double endTime = simulationDuration - 0.5;
+double endTime   = simulationDuration - 0.5;
 
 int main(int argc, char** argv)
 {
     // Default for argc is 1 but I don't know why ┐(ﾟ ～ﾟ )┌
-    if(argc != 4)
+    if(argc != 3)
     {
         std::cerr << "[ERROR] [CARTESIAN CONTROL] No path to file was given. "
-                  << "Usage: ./cartesian_control /path/to/file.urdf endpoint_name MODE\n";
+                  << "Usage: ./cartesian_control /path/to/file.urdf endpoint_name\n";
              
         return -1;                                                                                  // Exit main() with error
     }
 
     srand(time(NULL));                                                                              // Seed the random number generator	
 
-    // Set up the controller
+    // Create model and controller
     auto model = std::make_shared<RobotLibrary::Model::KinematicTree>(argv[1]);                     // Create shared ptr for model
-
-    std::string endpointName = argv[2];
-
-    std::unique_ptr<RobotLibrary::Control::SerialLinkBase> controller;                              // This allows for polymorphism
-
-         if (argv[3] == std::string("VELOCITY")) controller = std::make_unique<RobotLibrary::Control::SerialKinematicControl>(model, endpointName);
-    else if (argv[3] == std::string("TORQUE"))   controller = std::make_unique<RobotLibrary::Control::SerialDynamicControl>(model, endpointName);
-    else
-    {
-        std::cerr << "[ERROR] [JOINT CONTROL] Invalid argument for control mode. Options are VELOCITY or TORQUE.\n";         
-        return -1;
-    }
+    auto controller = std::make_shared<RobotLibrary::Control::SerialLinkKinematic>(model, argv[2]);
 
     unsigned int n = model->number_of_joints();                                                     // Because I'm lazy
-
+    
     Eigen::VectorXd jointPosition = 2*Eigen::VectorXd::Random(n);                                   // Set a random start configuration
     Eigen::VectorXd jointVelocity =   Eigen::VectorXd::Zero(n);                                     // Start at rest
 
     model->update_state(jointPosition, jointVelocity);                                              // Updates the forward kinematics
     
-    controller->update();                                                                            // Updates properties specific to this controller
+    controller->update();                                                                           // Updates properties specific to this controller
 
     // Set up the Cartesian trajectory
     RobotLibrary::Model::Pose startPose = controller->endpoint_pose();                              // Get the current endpoint pose
@@ -92,7 +80,6 @@ int main(int argc, char** argv)
 
     unsigned int rowCounter = 0;                                                                    // For indexing across arrays
 
-
     // Run the numerical simulation
     
     Eigen::VectorXd jointControl = Eigen::VectorXd::Zero(n);
@@ -101,12 +88,7 @@ int main(int argc, char** argv)
     {
       double simulationTime = i/simulationFrequency;                                                // Current simulation time
       
-             if (argv[3] == std::string("VELOCITY")) jointVelocity  = jointControl;
-        else if (argv[3] == std::string("TORQUE"))   jointVelocity += model->joint_inertia_matrix().llt().solve(jointControl - model->joint_coriolis_matrix() * model->joint_velocities()) / simulationFrequency;
-        else
-        {
-            std::cerr << "[ERROR] [JOINT CONTROL] Control mode was " << argv[3] << " but must be VELOCITY or TORQUE.\n";
-        }
+        jointVelocity  = jointControl;
          
         jointPosition += jointVelocity / simulationFrequency;
       

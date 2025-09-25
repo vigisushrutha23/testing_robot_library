@@ -1,9 +1,9 @@
 /**
- * @file    joint_control.cpp
+ * @file    joint_velocity_control.cpp
  * @author  Jon Woolfrey
  * @email   jonathan.woolfrey@gmail.com
- * @date    May 2025
- * @version 1.0
+ * @date    August 2025
+ * @version 1.1
  * @brief   Numerical simulation for joint trajectory tracking.
  * 
  * @details This executable performs a numerical simulation to assess the joint trajectory tracking
@@ -18,8 +18,7 @@
 
 #include <fstream>                                                                                  // Reading and writing to files
 #include <iostream>                                                                                 // std::cout, std::cerr
-#include <RobotLibrary/Control/SerialKinematicControl.h>                                            // Custom control class
-#include <RobotLibrary/Control/SerialDynamicControl.h>
+#include <RobotLibrary/Control/SerialLinkKinematic.h>                                              // Custom control class
 #include <RobotLibrary/Trajectory/SplineTrajectory.h>                                               // Custom trajectory generator
 #include <time.h>
 
@@ -38,10 +37,10 @@ int polynomialOrder = 5;
 int main(int argc, char** argv)
 {
     // Default for argc is 1 but I don't know why ┐(ﾟ ～ﾟ )┌
-	if(argc != 4)
+	if(argc != 3)
 	{
 		std::cerr << "[ERROR] [JOINT CONTROL] Invalid arguments. "
-		          << "Usage: ./joint_control /path/to/file.urdf endpoint_name MODE\n";
+		          << "Usage: ./joint_control /path/to/file.urdf endpoint_name\n";
 	         
 		return -1;                                                                                  // Exit main() with error
 	}
@@ -53,15 +52,7 @@ int main(int argc, char** argv)
 
     std::string endpointName = argv[2];
 
-    std::unique_ptr<RobotLibrary::Control::SerialLinkBase> controller;                              // This allows for polymorphism
-
-         if (argv[3] == std::string("VELOCITY")) controller = std::make_unique<RobotLibrary::Control::SerialKinematicControl>(model, endpointName);
-    else if (argv[3] == std::string("TORQUE"))   controller = std::make_unique<RobotLibrary::Control::SerialDynamicControl>(model, endpointName);
-    else
-    {
-        std::cerr << "[ERROR] [JOINT CONTROL] Invalid argument for control mode. Options are VELOCITY or TORQUE.\n";         
-        return -1;
-    }
+    auto controller = std::make_shared<RobotLibrary::Control::SerialLinkKinematic>(model, endpointName);
 
     unsigned int n = model->number_of_joints();
 
@@ -102,13 +93,7 @@ int main(int argc, char** argv)
         
         double simulationTime = i / simulationFrequency;
         
-             if (argv[3] == std::string("VELOCITY")) jointVelocity  = jointControl;
-        else if (argv[3] == std::string("TORQUE"))   jointVelocity += model->joint_inertia_matrix().llt().solve(jointControl - model->joint_coriolis_matrix() * model->joint_velocities()) / simulationFrequency;
-        else
-        {
-            std::cerr << "[ERROR] [JOINT CONTROL] Control mode was " << argv[3] << " but must be VELOCITY or TORQUE.\n";
-        }
-         
+        jointVelocity  = jointControl;
         jointPosition += jointVelocity / simulationFrequency;
         
         // Run the control at 1/10th of the simulation
