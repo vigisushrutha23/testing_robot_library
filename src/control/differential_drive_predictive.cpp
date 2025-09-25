@@ -37,20 +37,20 @@ int main(int argc, char **argv)
     RobotLibrary::Model::DifferentialDriveParameters modelParameters;
     modelParameters.inertia                = 0.5 * 1.0 * 0.25 * 0.25;                              // Rotational inertia (kg*m^2)
     modelParameters.mass                   = 1.0;                                                  // Weight (kg)
-    modelParameters.maxAngularAcceleration = 16.0;                                                   // Maximum rotational acceleration (rad/s/s)
-    modelParameters.maxAngularVelocity     = 400.0 * M_PI / 30.0;                                   // Maximum rotational speed (rad/s)
-    modelParameters.maxLinearAcceleration  = 10.0;                                                   // Maximum forward acceleration (m/s/s)
-    modelParameters.maxLinearVelocity      = 20.0;                                                   // Maximum forward speed (m/s)
+    modelParameters.maxAngularAcceleration = 32.0;                                                   // Maximum rotational acceleration (rad/s/s)
+    modelParameters.maxAngularVelocity     = 800.0 * M_PI / 30.0;                                   // Maximum rotational speed (rad/s)
+    modelParameters.maxLinearAcceleration  = 20.0;                                                   // Maximum forward acceleration (m/s/s)
+    modelParameters.maxLinearVelocity      = 40.0;                                                   // Maximum forward speed (m/s)
     modelParameters.propagationUncertainty = Eigen::Matrix3d::Identity();                           // Uncertainty of configuration propagation in Kalman filter
     modelParameters.robotRadii  << 0.15,0.2,0.15;
     modelParameters.robotFootprint << -0.2,0.0,0.2;
     
     // Parameters for the QP solver
     SolverOptions<double> solverOptions;
-    solverOptions.barrierReductionRate = 1e-02;
+    solverOptions.barrierReductionRate = 1e-04;
     solverOptions.initialBarrierScalar = 1000;
     solverOptions.stepSizeTolerance    = 1e-08;                                                     // This should be very small
-    solverOptions.maxSteps             = 10;
+    solverOptions.maxSteps             = 100;
     
     // Parameters for the predictive controller
     RobotLibrary::Control::DifferentialDrivePredictiveParameters controlParameters;
