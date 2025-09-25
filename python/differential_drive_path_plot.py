@@ -32,7 +32,6 @@ x_actual = actual_data[:, 1]
 y_actual = actual_data[:, 2]
 heading_actual = actual_data[:, 3]
 
-<<<<<<< HEAD
 # Load Obstaccle Data
 obstacle_data_path = os.path.join(script_dir, '..', 'build', 'obstacle_data.csv')
 obstacle_data = np.loadtxt(obstacle_data_path, delimiter=',')
@@ -42,16 +41,6 @@ if obstacle_data.shape[0] >0:
         obs_ax_actual = obstacle_data[:,2]
         obs_ay_actual = obstacle_data[:,3]
 
-=======
-# Load the first row of obstacle_path.csv (time, center_x, center_y, radius_x, radius_y)
-obstacle_csv_path = os.path.join(script_dir, '..', 'build', 'obstacle_data.csv')
-obstacle_first_row = np.loadtxt(obstacle_csv_path, delimiter=',', max_rows=1)
-time_obs = obstacle_first_row[0]
-center_x = obstacle_first_row[1]
-center_y = obstacle_first_row[2]
-radius_x = obstacle_first_row[3]
-radius_y = obstacle_first_row[4]
->>>>>>> upstream/devel
 
 # Plot desired and actual paths
 fig1, ax1 = plt.subplots()
@@ -84,7 +73,6 @@ ax1.grid(False)
 ax1.set_xlabel('X Position')
 ax1.set_ylabel('Y Position')
 ax1.set_title('Cartesian Path')
-<<<<<<< HEAD
 ax1.legend()
 
 if obstacle_data.shape[0] >0:
@@ -107,11 +95,6 @@ ax1.axis('equal')
 
 
 # Load control input data
-=======
-ax1.axis('equal')
-
-### Load control input data
->>>>>>> upstream/devel
 control_csv_path = os.path.join(script_dir, '..', 'build', 'control_input_data.csv')
 control_data = np.loadtxt(control_csv_path, delimiter=',')
 control_time = control_data[:, 0]
