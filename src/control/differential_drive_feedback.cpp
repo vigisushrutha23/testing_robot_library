@@ -39,8 +39,8 @@ int main(int argc, char **argv)
     modelParameters.mass                   = 5.0;                                                   // Weight (kg)
     modelParameters.maxAngularAcceleration = 5.0;                                                   // Maximum rotational acceleration (rad/s/s)
     modelParameters.maxAngularVelocity     = 100.0 * M_PI / 30.0;                                   // Maximum rotational speed (rad/s)
-    modelParameters.maxLinearAcceleration  = 2.0;                                                   // Maximum forward acceleration (m/s/s)
-    modelParameters.maxLinearVelocity      = 2.0;                                                   // Maximum forward speed (m/s)
+    modelParameters.maxLinearAcceleration  = 10.0;                                                   // Maximum forward acceleration (m/s/s)
+    modelParameters.maxLinearVelocity      = 10.0;                                                   // Maximum forward speed (m/s)
     modelParameters.propagationUncertainty = Eigen::Matrix3d::Identity();                           // Uncertainty of configuration propagation in Kalman filter
     
     // Parameters for the feedback controller
@@ -57,11 +57,11 @@ int main(int argc, char **argv)
     RobotLibrary::Control::DifferentialDriveFeedback controller(modelParameters, controlParameters);
     
     // Set up the obstacles
-    auto line = std::make_unique<RobotLibrary::Math::Line2D>(Eigen::Vector2d(1.0, 0.0));
+    auto line = std::make_unique<RobotLibrary::Math::Line2D>(Eigen::Vector2d(1.0, -1.0));
    
     auto obstacle = RobotLibrary::Model::Obstacle2D(std::move(line));                               // Create obstacle
     
-    obstacle.update_state(RobotLibrary::Model::Pose2D(0.0, 0.8, 0.0), Eigen::Vector3d::Zero());     // Set new pose (zero speed)
+    obstacle.update_state(RobotLibrary::Model::Pose2D(0.5, 0.0, 0.0), Eigen::Vector3d::Zero());     // Set new pose (zero speed)
     
     std::vector<RobotLibrary::Model::Obstacle2D> obstacles;
     obstacles.push_back(std::move(obstacle));
@@ -105,8 +105,6 @@ int main(int argc, char **argv)
             break;
         }
         
-        std::cout << "Forward velocity: " << controlInput[0] << "\n";
-    
         // Save data for analysis
         desiredConfiguration[i] = {desiredPosition[0], desiredPosition[1], desiredPosition[2]};
         actualConfiguration[i]  = {actualPose.translation()[0], actualPose.translation()[1], actualPose.angle()};
