@@ -57,11 +57,12 @@ int main(int argc, char **argv)
     RobotLibrary::Control::DifferentialDriveFeedback controller(modelParameters, controlParameters);
     
     // Set up the obstacles
-    auto line = std::make_unique<RobotLibrary::Math::Line2D>(Eigen::Vector2d(1.0, -1.0));
+    double line_angle = 90.0;
+    auto line = std::make_unique<RobotLibrary::Math::Line2D>(Eigen::Vector2d(cos(line_angle*0.0174533), sin(line_angle*0.0174533)));
    
     auto obstacle = RobotLibrary::Model::Obstacle2D(std::move(line));                               // Create obstacle
     
-    obstacle.update_state(RobotLibrary::Model::Pose2D(0.5, 0.0, 0.0), Eigen::Vector3d::Zero());     // Set new pose (zero speed)
+    obstacle.update_state(RobotLibrary::Model::Pose2D(0.2, 0.0, 0.0), Eigen::Vector3d::Zero());     // Set new pose (zero speed)
     
     std::vector<RobotLibrary::Model::Obstacle2D> obstacles;
     obstacles.push_back(std::move(obstacle));
