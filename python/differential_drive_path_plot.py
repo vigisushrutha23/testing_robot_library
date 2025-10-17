@@ -38,11 +38,13 @@ obstacle_data_path = os.path.join(script_dir, '..', 'build', 'obstacle_data.csv'
 obstacle_path_exists = os.path.exists(obstacle_data_path)
 if obstacle_path_exists == True:
         obstacle_data = np.loadtxt(obstacle_data_path, delimiter=',')
+        obstacle_data = np.atleast_2d(obstacle_data)
         if obstacle_data.shape[0] >0:
                 obs_xcoord_actual = obstacle_data[:,0]
                 obs_ycoord_actual = obstacle_data[:,1]
                 obs_ax_actual = obstacle_data[:,2]
                 obs_ay_actual = obstacle_data[:,3]
+                obs_angle_actual = obstacle_data[:,4]
 
 
 # Plot desired and actual paths
@@ -80,7 +82,7 @@ ax1.legend()
 
 if obstacle_path_exists and obstacle_data.shape[0] >0:
         for i in range(obs_xcoord_actual.shape[0]):
-                ellipse = Ellipse(xy=(obs_xcoord_actual[i],obs_ycoord_actual[i]),width=2*(obs_ax_actual[i]+0.0),height=2*(obs_ay_actual[i]+0.0), angle=0.0, edgecolor='g', lw=2, facecolor='none')
+                ellipse = Ellipse(xy=(obs_xcoord_actual[i],obs_ycoord_actual[i]),width=2*(obs_ax_actual[i]+0.0),height=2*(obs_ay_actual[i]+0.0), angle=obs_angle_actual[i], edgecolor='g', lw=2, facecolor='none')
                 ax1.add_patch(ellipse)
 
 for i in range(x_actual.shape[0]):
