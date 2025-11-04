@@ -74,14 +74,14 @@ int main(int argc, char **argv)
     controller.update_state(actualPose, controlInput);
     
     // Set up obstacle(s)
-    std::vector<std::vector<RobotLibrary::Math::Ellipsoid<2>>> obstacles;
-        
-    //Temporarily setup one or two stationary obstacles.
+    std::vector<std::vector<RobotLibrary::Model::Obstacle2D>> obstacles(predictionSteps);           // Must match the length of the prediction horizon
     
-    Eigen::Matrix2d temp_rot = Eigen::MatrixXd::Identity(2,2);
-    Eigen::Vector2d temp_centre,temp_axes;
-    temp_centre << -0.8, 0.6;
-    temp_axes << 0.2, 0.1;
+    double xSemiAxis = 0.25;
+    double ySemiAxis = 0.25;
+    Eigen::Matrix2d shapeMatrix; shapeMatrix << xSemiAxis * xSemiAxis, 0.0,
+                                                                  0.0, ySemiAxis * ySemiAxis; 
+    Eigen::Vector2d centre = {0.58, 0.25};
+    
     /*obstacles.resize(1);  
     RobotLibrary::Math::Ellipsoid<2> temp_obstacle(temp_centre,temp_rot,temp_axes);
         obstacles[0].emplace_back(RobotLibrary::Math::Ellipsoid<2>(centre, shapeMatrix));
@@ -101,6 +101,7 @@ int main(int argc, char **argv)
             double simTime = i / controlFrequency;
         
         // Query the desired state from the trajectory across the control horizon
+        std::cout<<"\nn SImulation Loop"<<i;
         std::vector<RobotLibrary::Model::DifferentialDriveState> desiredStates;
         
         for (int j = 0; j <= predictionSteps; ++j)
