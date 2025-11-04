@@ -21,7 +21,7 @@
 #include <RobotLibrary/Trajectory/MinimumArcLength.h>
 
 // Simulation parameters
-double simulationTime = 8.0;
+double simulationTime = 10.0;
 double controlFrequency = 100.0;
 unsigned int simulationSteps = 1000;
 unsigned int predictionSteps = 100;
@@ -37,7 +37,7 @@ int main(int argc, char **argv)
     RobotLibrary::Model::DifferentialDriveParameters modelParameters;
     modelParameters.inertia                = 0.5 * 50.0 * 0.25 * 0.25;                              // Rotational inertia (kg*m^2)
     modelParameters.mass                   = 50.0;                                                  // Weight (kg)
-    modelParameters.maxAngularAcceleration = 5.0;                                                   // Maximum rotational acceleration (rad/s/s)
+    modelParameters.maxAngularAcceleration = 2.0;                                                   // Maximum rotational acceleration (rad/s/s)
     modelParameters.maxAngularVelocity     = 100.0 * M_PI / 30.0;                                   // Maximum rotational speed (rad/s)
     modelParameters.maxLinearAcceleration  = 2.0;                                                   // Maximum forward acceleration (m/s/s)
     modelParameters.maxLinearVelocity      = 1.0;                                                   // Maximum forward speed (m/s)
@@ -48,22 +48,20 @@ int main(int argc, char **argv)
     
     // Parameters for the QP solver
     SolverOptions<double> solverOptions;
-    solverOptions.barrierReductionRate = 1e-04;
-    solverOptions.initialBarrierScalar = 1000;
     solverOptions.stepSizeTolerance    = 1e-08;                                                     // This should be very small
     solverOptions.maxSteps             = 100;
     
     // Parameters for the predictive controller
     RobotLibrary::Control::DifferentialDrivePredictiveParameters controlParameters;
     controlParameters.controlFrequency       = controlFrequency;
-    controlParameters.exponent               = 0.0;                                               // Growth or decay of pose error weighting
-    controlParameters.maximumControlStepNorm = 1e-06;                                               // DDP algorithm terminates early if max. ||du|| is smaller than this
-    controlParameters.numberOfRecursions     = 10;                                                   // No. of forward & backward passes for the DDP algorithm
+    controlParameters.exponent               =  0.005;                                              // Growth or decay of pose error weighting
+    controlParameters.maximumControlStepNorm = 1e-08;                                               // DDP algorithm terminates early if max. ||du|| is smaller than this
+    controlParameters.numberOfRecursions     = 10;                                                  // No. of forward & backward passes for the DDP algorithm
     controlParameters.predictionSteps        = predictionSteps;                                     // Length of prediction horizon
    
-    controlParameters.poseErrorWeight << 8000.0,   0.0, 0.0,
-                                           0.0,   8000.0, 4.0,
-                                           0.0,   4.0, 5.0;
+    controlParameters.poseErrorWeight << 5000.0,    0.0,  0.0,
+                                            0.0, 5000.0,  1.0,
+                                            0.0,    1.0,  2.0;
     
     RobotLibrary::Control::DifferentialDrivePredictive controller(modelParameters,
                                                                   controlParameters,
@@ -86,9 +84,9 @@ int main(int argc, char **argv)
     temp_axes << 0.2, 0.1;
     /*obstacles.resize(1);  
     RobotLibrary::Math::Ellipsoid<2> temp_obstacle(temp_centre,temp_rot,temp_axes);
-    for(int i = 0; i < predictionSteps; i++)
-     obstacles[0].push_back(temp_obstacle);   */
-     
+        obstacles[0].emplace_back(RobotLibrary::Math::Ellipsoid<2>(centre, shapeMatrix));
+    }*/
+       
     // Set up data arrays for analysis
     std::vector<std::array<double,3>> desiredConfiguration;  desiredConfiguration.resize(simulationSteps);
     std::vector<std::array<double,3>> actualConfiguration;   actualConfiguration.resize(simulationSteps);
@@ -100,7 +98,7 @@ int main(int argc, char **argv)
     // Run the simulation
     for (int i = 0; i < simulationSteps && !full_computation_failure; ++i)
     {
-        double simTime = i / controlFrequency;
+            double simTime = i / controlFrequency;
         
         // Query the desired state from the trajectory across the control horizon
         std::vector<RobotLibrary::Model::DifferentialDriveState> desiredStates;
@@ -191,7 +189,9 @@ int main(int argc, char **argv)
         file << "\n";
     }
     file.close();
-    
+
+    /* NOTE: This needs to be re-worked... indices have changed
+    // Save the obstacle
     file.open("obstacle_data.csv");
     for(int i = 0; i < obstacles.size(); i++)
     {
@@ -201,7 +201,10 @@ int main(int argc, char **argv)
         file<<"\n";
       }
     }
-    std::cout << "[INFO] [DIFFERENTIAL DRIVE PREDICTIVE CONTROL] Numerical simulation complete."
+    file.close();
+    */
+    
+    std::cout << "[INFO] [DIFFERENTIAL DRIVE PREDICTIVE CONTROL] Numerical simulation complete. "
               << "Data saved to .csv files for analysis.\n";
 
     return 0;                                                                                       // No problems with main

@@ -58,5 +58,6 @@ target_link_libraries(differential_drive_feedback PRIVATE RobotLibrary::RobotLib
 add_executable(differential_drive_feedback_ellipsoid src/control/differential_dirve_feedback_ellipsoid.cpp)
 target_link_libraries(differential_drive_feedback_ellipsoid PRIVATE RobotLibrary::RobotLibrary)
 
-#add_executable(differential_drive_predictive src/control/differential_drive_predictive.cpp)
-#target_link_libraries(differential_drive_predictive PRIVATE RobotLibrary::RobotLibrary)
+
+add_executable(differential_drive_predictive src/control/differential_drive_predictive.cpp)
+target_link_libraries(differential_drive_predictive PRIVATE RobotLibrary::RobotLibrary)

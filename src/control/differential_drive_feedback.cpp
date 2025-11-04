@@ -39,8 +39,8 @@ int main(int argc, char **argv)
     modelParameters.mass                   = 5.0;                                                   // Weight (kg)
     modelParameters.maxAngularAcceleration = 5.0;                                                   // Maximum rotational acceleration (rad/s/s)
     modelParameters.maxAngularVelocity     = 100.0 * M_PI / 30.0;                                   // Maximum rotational speed (rad/s)
-    modelParameters.maxLinearAcceleration  = 10.0;                                                   // Maximum forward acceleration (m/s/s)
-    modelParameters.maxLinearVelocity      = 10.0;                                                   // Maximum forward speed (m/s)
+    modelParameters.maxLinearAcceleration  =  3.0;                                                  // Maximum forward acceleration (m/s/s)
+    modelParameters.maxLinearVelocity      =  2.0;                                                  // Maximum forward speed (m/s)
     modelParameters.propagationUncertainty = Eigen::Matrix3d::Identity();                           // Uncertainty of configuration propagation in Kalman filter
     
     // Parameters for the feedback controller
