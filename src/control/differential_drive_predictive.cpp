@@ -41,7 +41,7 @@ int main(int argc, char **argv)
     modelParameters.maxAngularVelocity     = 100.0 * M_PI / 30.0;                                   // Maximum rotational speed (rad/s)
     modelParameters.maxLinearAcceleration  = 2.0;                                                   // Maximum forward acceleration (m/s/s)
     modelParameters.maxLinearVelocity      = 1.0;                                                   // Maximum forward speed (m/s)
-    modelParameters.minimumSafeDistance    = 0.5;
+    modelParameters.minimumSafeDistance    = 1.0;
     modelParameters.propagationUncertainty = Eigen::Matrix3d::Identity();                           // Uncertainty of configuration propagation in Kalman filter
     
     // Parameters for the QP solver
@@ -54,7 +54,7 @@ int main(int argc, char **argv)
     controlParameters.controlFrequency       = controlFrequency;
     controlParameters.exponent               =  0.005;                                              // Growth or decay of pose error weighting
     controlParameters.maximumControlStepNorm = 1e-08;                                               // DDP algorithm terminates early if max. ||du|| is smaller than this
-    controlParameters.numberOfRecursions     = 10;                                                  // No. of forward & backward passes for the DDP algorithm
+    controlParameters.numberOfRecursions     = 5;                                                  // No. of forward & backward passes for the DDP algorithm
     controlParameters.predictionSteps        = predictionSteps;                                     // Length of prediction horizon
    
     controlParameters.poseErrorWeight << 5000.0,    0.0,  0.0,
@@ -78,13 +78,16 @@ int main(int argc, char **argv)
     double ySemiAxis = 0.25;
     Eigen::Matrix2d shapeMatrix; shapeMatrix << xSemiAxis * xSemiAxis, 0.0,
                                                                   0.0, ySemiAxis * ySemiAxis; 
-    Eigen::Vector2d centre = {0.58, 0.25};
+    Eigen::Vector2d centre = {-0.2, 0.2};
     
-    /*
-    for (int j = 0; j < predictionSteps + 1; ++j)
+
+    for (int j = 0; j < predictionSteps; ++j)
     {
-        obstacles[0].emplace_back(RobotLibrary::Math::Ellipsoid<2>(centre, shapeMatrix));
-    }*/
+        auto ellipse = std::make_unique<RobotLibrary::Math::Ellipsoid2D>(shapeMatrix);
+        auto obstacle = RobotLibrary::Model::Obstacle2D(std::move(ellipse));
+        obstacle.update_state(RobotLibrary::Model::Pose2D(centre(0), centre(1), 0.0), Eigen::Vector3d::Zero());
+        obstacles[j].emplace_back(std::move(obstacle));
+    }
        
     // Set up data arrays for analysis
     std::vector<std::array<double,3>> desiredConfiguration;  desiredConfiguration.resize(simulationSteps);
