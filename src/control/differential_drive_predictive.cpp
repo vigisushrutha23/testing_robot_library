@@ -24,7 +24,7 @@
 double simulationTime = 10.0;
 double controlFrequency = 100.0;
 unsigned int simulationSteps = 1000;
-unsigned int predictionSteps = 100;
+unsigned int predictionSteps = 50;
 
 int main(int argc, char **argv)
 {   
@@ -35,12 +35,12 @@ int main(int argc, char **argv)
     
     // Parameters for the model
     RobotLibrary::Model::DifferentialDriveParameters modelParameters;
-    modelParameters.inertia                = 0.5 * 50.0 * 0.25 * 0.25;                              // Rotational inertia (kg*m^2)
-    modelParameters.mass                   = 50.0;                                                  // Weight (kg)
-    modelParameters.maxAngularAcceleration = 2.0;                                                   // Maximum rotational acceleration (rad/s/s)
-    modelParameters.maxAngularVelocity     = 100.0 * M_PI / 30.0;                                   // Maximum rotational speed (rad/s)
-    modelParameters.maxLinearAcceleration  = 2.0;                                                   // Maximum forward acceleration (m/s/s)
-    modelParameters.maxLinearVelocity      = 1.0;                                                   // Maximum forward speed (m/s)
+    modelParameters.inertia                = 0.5 * 0.01 * 0.25 * 0.25;                              // Rotational inertia (kg*m^2)
+    modelParameters.mass                   = 0.01;                                                  // Weight (kg)
+    modelParameters.maxAngularAcceleration = 4.0;                                                   // Maximum rotational acceleration (rad/s/s)
+    modelParameters.maxAngularVelocity     = 200.0 * M_PI / 30.0;                                   // Maximum rotational speed (rad/s)
+    modelParameters.maxLinearAcceleration  = 4.0;                                                   // Maximum forward acceleration (m/s/s)
+    modelParameters.maxLinearVelocity      = 2.0;                                                   // Maximum forward speed (m/s)
     modelParameters.minimumSafeDistance    = 1.0;
     modelParameters.propagationUncertainty = Eigen::Matrix3d::Identity();                           // Uncertainty of configuration propagation in Kalman filter
     
@@ -54,11 +54,11 @@ int main(int argc, char **argv)
     controlParameters.controlFrequency       = controlFrequency;
     controlParameters.exponent               =  0.005;                                              // Growth or decay of pose error weighting
     controlParameters.maximumControlStepNorm = 1e-08;                                               // DDP algorithm terminates early if max. ||du|| is smaller than this
-    controlParameters.numberOfRecursions     = 15;                                                  // No. of forward & backward passes for the DDP algorithm
+    controlParameters.numberOfRecursions     = 10;                                                  // No. of forward & backward passes for the DDP algorithm
     controlParameters.predictionSteps        = predictionSteps;                                     // Length of prediction horizon
    
-    controlParameters.poseErrorWeight << 500.0,    0.0,  0.0,
-                                            0.0, 500.0,  1.0,
+    controlParameters.poseErrorWeight << 2.0,    0.0,  0.0,
+                                            0.0, 2.0,  1.0,
                                             0.0,    1.0,  2.0;
     
     RobotLibrary::Control::DifferentialDrivePredictive controller(modelParameters,
@@ -74,11 +74,11 @@ int main(int argc, char **argv)
     // Set up obstacle(s)
     std::vector<std::vector<RobotLibrary::Model::Obstacle2D>> obstacles(predictionSteps);           // Must match the length of the prediction horizon
     
-    double xSemiAxis = 0.30;
-    double ySemiAxis = 0.30;
+    double xSemiAxis = 0.20;
+    double ySemiAxis = 0.20;
     Eigen::Matrix2d shapeMatrix; shapeMatrix << xSemiAxis * xSemiAxis, 0.0,
                                                                   0.0, ySemiAxis * ySemiAxis; 
-    Eigen::Vector2d centre = {-0.2, 0.4};
+    Eigen::Vector2d centre = {-0.05, 0.4};
     
 
     for (int j = 0; j < predictionSteps; ++j)
@@ -200,7 +200,7 @@ int main(int argc, char **argv)
     /* NOTE: This needs to be re-worked... indices have changed
     // Save the obstacle*/
     file.open("obstacle_data.csv");
-    for(int i = 0; i < predictionSteps; ++i)
+    for(int i = 0; i < obstacles.size(); ++i)
     {
         file << (double)(i);
         file << "," << obstacles[i][0].pose().translation()(0) << "," << obstacles[i][0].pose().translation()(1) << "," << xSemiAxis << "," << ySemiAxis << "\n";
