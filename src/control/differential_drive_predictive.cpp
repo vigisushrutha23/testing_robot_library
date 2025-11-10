@@ -47,18 +47,18 @@ int main(int argc, char **argv)
     // Parameters for the QP solver
     SolverOptions<double> solverOptions;
     solverOptions.stepSizeTolerance    = 1e-08;                                                     // This should be very small
-    solverOptions.maxSteps             = 5;
+    solverOptions.maxSteps             = 15;
     
     // Parameters for the predictive controller
     RobotLibrary::Control::DifferentialDrivePredictiveParameters controlParameters;
     controlParameters.controlFrequency       = controlFrequency;
     controlParameters.exponent               =  0.005;                                              // Growth or decay of pose error weighting
     controlParameters.maximumControlStepNorm = 1e-08;                                               // DDP algorithm terminates early if max. ||du|| is smaller than this
-    controlParameters.numberOfRecursions     = 5;                                                  // No. of forward & backward passes for the DDP algorithm
+    controlParameters.numberOfRecursions     = 15;                                                  // No. of forward & backward passes for the DDP algorithm
     controlParameters.predictionSteps        = predictionSteps;                                     // Length of prediction horizon
    
-    controlParameters.poseErrorWeight << 5000.0,    0.0,  0.0,
-                                            0.0, 5000.0,  1.0,
+    controlParameters.poseErrorWeight << 500.0,    0.0,  0.0,
+                                            0.0, 500.0,  1.0,
                                             0.0,    1.0,  2.0;
     
     RobotLibrary::Control::DifferentialDrivePredictive controller(modelParameters,
@@ -74,11 +74,11 @@ int main(int argc, char **argv)
     // Set up obstacle(s)
     std::vector<std::vector<RobotLibrary::Model::Obstacle2D>> obstacles(predictionSteps);           // Must match the length of the prediction horizon
     
-    double xSemiAxis = 0.25;
-    double ySemiAxis = 0.25;
+    double xSemiAxis = 0.30;
+    double ySemiAxis = 0.30;
     Eigen::Matrix2d shapeMatrix; shapeMatrix << xSemiAxis * xSemiAxis, 0.0,
                                                                   0.0, ySemiAxis * ySemiAxis; 
-    Eigen::Vector2d centre = {-0.2, 0.2};
+    Eigen::Vector2d centre = {-0.2, 0.4};
     
 
     for (int j = 0; j < predictionSteps; ++j)
@@ -97,7 +97,8 @@ int main(int argc, char **argv)
     std::vector<std::vector<double>> predictedConfiguration; predictedConfiguration.resize(simulationSteps);
     
     // Run the simulation
-    for (int i = 0; i < simulationSteps; ++i)
+    bool track_failure = false;
+    for (int i = 0; i < simulationSteps && ! track_failure; ++i)
     {
         double simTime = i / controlFrequency;
         
@@ -122,10 +123,17 @@ int main(int argc, char **argv)
         }
         catch (const std::exception &exception)
         {
-            throw std::runtime_error("[ERROR] [DIFFERENTIAL DRIVE PREDICTIVE CONTROL] "
+            std::cerr <<"[ERROR] [DIFFERENTIAL DRIVE PREDICTIVE CONTROL] "
                                      "Failed to solve trajectory tracking:\n"
-                                     + std::string(exception.what()));
+                                     << std::string(exception.what());
+                                     std::cout<<"\n\n Breaking";
+             track_failure = true; 
+             desiredConfiguration.resize(i-1);
+             actualConfiguration.resize(i-1);
+             poseError.resize(i-1);
+             controlInputs.resize(i-1);
              
+             std::cout<<"\n\n Breaking2";
              break;
         }
         
@@ -146,10 +154,12 @@ int main(int argc, char **argv)
     }
     
     std::ofstream file;
- 
+    std::cout<<"\n Got here before fump";
+
+    std::cout<<"\n got here before dump";
     // Save the trajectory data
     file.open("desired_configuration_data.csv");
-    for(int i = 0; i < simulationSteps; ++i)
+    for(int i = 0; i < desiredConfiguration.size(); ++i)
     {
       file << (double)(i / controlFrequency);
       for(int j = 0; j < 3; ++j) file << "," << desiredConfiguration[i][j];
@@ -159,7 +169,7 @@ int main(int argc, char **argv)
 
     // Save the actual configuration data
     file.open("actual_configuration_data.csv");
-    for(int i = 0; i < simulationSteps; ++i)
+    for(int i = 0; i < actualConfiguration.size(); ++i)
     {
       file << (double)(i / controlFrequency);
       for(int j = 0; j < 3; ++j) file << "," << actualConfiguration[i][j];
@@ -169,7 +179,7 @@ int main(int argc, char **argv)
     
     // Save the control data
     file.open("control_input_data.csv");
-    for(int i = 0; i < simulationSteps; ++i)
+    for(int i = 0; i < controlInputs.size(); ++i)
     {
       file << (double)(i / controlFrequency);
       for(int j = 0; j < 2; ++j) file << "," << controlInputs[i][j];
@@ -179,7 +189,7 @@ int main(int argc, char **argv)
     
     // Save the error data
     file.open("tracking_error_data.csv");
-    for (int i = 0; i < simulationSteps; ++i)
+    for (int i = 0; i < poseError.size(); ++i)
     {
         file << (double)(i / controlFrequency);
         for(int j = 0; j < 2; ++j) file << "," << poseError[i][j];
@@ -188,15 +198,15 @@ int main(int argc, char **argv)
     file.close();
 
     /* NOTE: This needs to be re-worked... indices have changed
-    // Save the obstacle
+    // Save the obstacle*/
     file.open("obstacle_data.csv");
-    for(int i = 0; i < simulationSteps; ++i)
+    for(int i = 0; i < predictionSteps; ++i)
     {
-        file << (double)(i / controlFrequency);
-        file << "," << obstacles[0][i].centre()[0] << "," << obstacles[0][i].centre()[1] << "," << xSemiAxis << "," << ySemiAxis << "\n";
+        file << (double)(i);
+        file << "," << obstacles[i][0].pose().translation()(0) << "," << obstacles[i][0].pose().translation()(1) << "," << xSemiAxis << "," << ySemiAxis << "\n";
     }
     file.close();
-    */
+    
     
     std::cout << "[INFO] [DIFFERENTIAL DRIVE PREDICTIVE CONTROL] Numerical simulation complete. "
               << "Data saved to .csv files for analysis.\n";
