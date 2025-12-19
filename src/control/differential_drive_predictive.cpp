@@ -72,19 +72,26 @@ int main(int argc, char **argv)
     controller.update_state(actualPose, controlInput);
     
     // Set up obstacle(s)
-    std::vector<std::vector<RobotLibrary::Model::Obstacle2D>> obstacles(predictionSteps+1);           // MUST be N+1
+    std::vector<std::vector<RobotLibrary::Model::Obstacle2D>> obstacles(simulationSteps+1);           // MUST be N+1
 
-    for (int i = 0; i < predictionSteps+1; ++i)
+    std::vector<std::vector<RobotLibrary::Model::Obstacle2D>> windowObstacles(predictionSteps+1);           // MUST be N+1
+
+    Eigen::Matrix2d shapeMatrix = 0.04 * Eigen::Matrix2d::Identity(); 
+
+    Eigen::Vector2d obs_velocity = {0.0,0.0};
+    for (int i = 0; i < simulationSteps+1; ++i)
     {
         // NOTE: We need N+1 here since for u[0], ... , u[N-1], and x[1], ... , x[N]
         // NOTE: We require the unique_ptr for polymorphism
         
-        auto line = std::make_unique<RobotLibrary::Math::Line2D>(Eigen::Vector2d(0.0, 1.0));        // Create line
+        auto ellipse = std::make_unique<RobotLibrary::Math::Ellipsoid2D>(shapeMatrix);        // Create line
         
-        obstacles[i].push_back(RobotLibrary::Model::Obstacle2D(std::move(line)));                   // Move it in to the obstacle vector
+        obstacles[i].push_back(RobotLibrary::Model::Obstacle2D(std::move(ellipse)));                   // Move it in to the obstacle vector
         
-        obstacles[i].back().update_state(RobotLibrary::Model::Pose2D(0.60, 0.0, 0.0), Eigen::Vector3d::Zero()); // Translate in x direction
+        obstacles[i].back().update_state(RobotLibrary::Model::Pose2D(0.60 + obs_velocity(0)*i/controlFrequency, 0.0 + obs_velocity(1)*i/controlFrequency, 0.0), Eigen::Vector3d::Zero()); // Translate in x direction
     }
+
+    std::copy(obstacles.begin(), obstacles.begin()+predictionSteps+1,windowObstacles.begin());
 
     // Set up data arrays for analysis
     std::vector<std::array<double,3>> desiredConfiguration;  desiredConfiguration.resize(simulationSteps);
@@ -115,7 +122,7 @@ int main(int argc, char **argv)
 
         try
         {
-            controlInput = controller.track_trajectory(desiredStates, obstacles);                   // Solve the predictive control problem
+            controlInput = controller.track_trajectory(desiredStates, windowObstacles);                   // Solve the predictive control problem
         }
         catch (const std::exception &exception)
         {
@@ -145,6 +152,9 @@ int main(int argc, char **argv)
         }
         
         // For next loop
+        windowObstacles.insert(windowObstacles.begin(), windowObstacles.begin()+1, windowObstacles.end());
+        windowObstacles.erase(windowObstacles.begin(), windowObstacles.end());
+        windowObstacles.push_back(obstacles[i+predictionSteps+2]);
         controller.update_state(actualPose, controlInput);
         actualPose = controller.predicted_pose();                                                   // Propagate the state
     }
@@ -198,8 +208,8 @@ int main(int argc, char **argv)
     file.open("obstacle_data.csv");
     for(int i = 0; i < obstacles.size(); ++i)
     {
-        file << (double)(i);
-        file << "," << obstacles[i][0].pose().translation()(0) << "," << obstacles[i][0].pose().translation()(1) << "," << xSemiAxis << "," << ySemiAxis << "\n";
+        file << (double)(i / controlFrequency);
+        file << "," << obstacles[i][0].pose().translation()(0) << "," << obstacles[i][0].pose().translation()(1) << "," << pow(shapeMatrix(0,0),0.5) << "," << pow(shapeMatrix(1,1),0.5) << "\n";
     }
     file.close();
     
