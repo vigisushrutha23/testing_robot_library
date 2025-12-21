@@ -74,7 +74,6 @@ int main(int argc, char **argv)
     // Set up obstacle(s)
     std::vector<std::vector<RobotLibrary::Model::Obstacle2D>> obstacles(simulationSteps+1);           // MUST be N+1
 
-    std::vector<std::vector<RobotLibrary::Model::Obstacle2D>> windowObstacles(predictionSteps+1);           // MUST be N+1
 
     Eigen::Matrix2d shapeMatrix = 0.04 * Eigen::Matrix2d::Identity(); 
 
@@ -91,7 +90,6 @@ int main(int argc, char **argv)
         obstacles[i].back().update_state(RobotLibrary::Model::Pose2D(0.60 + obs_velocity(0)*i/controlFrequency, 0.0 + obs_velocity(1)*i/controlFrequency, 0.0), Eigen::Vector3d::Zero()); // Translate in x direction
     }
 
-    std::copy(obstacles.begin(), obstacles.begin()+predictionSteps+1,windowObstacles.begin());
 
     // Set up data arrays for analysis
     std::vector<std::array<double,3>> desiredConfiguration;  desiredConfiguration.resize(simulationSteps);
@@ -107,7 +105,8 @@ int main(int argc, char **argv)
         double simTime = i / controlFrequency;                                                      // Dividing is more numerically stable
         
         std::vector<RobotLibrary::Model::DifferentialDriveState> desiredStates;                     // Query the desired state from the trajectory across the control horizon
-        
+        std::vector<std::vector<RobotLibrary::Model::Obstacle2D>> windowObstacles(predictionSteps+1);           // MUST be N+1
+
         for (int j = 0; j <= predictionSteps; ++j)
         {
             const auto &[pos, vel, acc] = trajectory.query_state(simTime + j / controlFrequency);   // Sample the trajectory across the horizon
@@ -118,6 +117,12 @@ int main(int argc, char **argv)
             state.velocity = vel;
             
             desiredStates.push_back(state);   
+            auto ellipse = std::make_unique<RobotLibrary::Math::Ellipsoid2D>(shapeMatrix);        // Create line
+        
+            windowObstacles[j].push_back(RobotLibrary::Model::Obstacle2D(std::move(ellipse)));                   // Move it in to the obstacle vector
+        
+            windowObstacles[j].back().update_state(RobotLibrary::Model::Pose2D(0.60 + obs_velocity(0)*i/controlFrequency, 0.0 + obs_velocity(1)*i/controlFrequency, 0.0), Eigen::Vector3d::Zero());
+            //windowObstacles.push_back(obstacles[i+j]);
         }
 
         try
@@ -152,9 +157,6 @@ int main(int argc, char **argv)
         }
         
         // For next loop
-        windowObstacles.insert(windowObstacles.begin(), windowObstacles.begin()+1, windowObstacles.end());
-        windowObstacles.erase(windowObstacles.begin(), windowObstacles.end());
-        windowObstacles.push_back(obstacles[i+predictionSteps+2]);
         controller.update_state(actualPose, controlInput);
         actualPose = controller.predicted_pose();                                                   // Propagate the state
     }
