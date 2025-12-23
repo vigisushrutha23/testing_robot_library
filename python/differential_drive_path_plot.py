@@ -67,6 +67,34 @@ ax1.arrow(x_actual[-1], y_actual[-1],
           arrow_length * np.cos(heading_actual[-1]),
           arrow_length * np.sin(heading_actual[-1]),
           head_width=0.03, head_length=0.05, fc='red', ec='red')
+          
+# Load ellipsoid data
+ellipsoid_csv_path = os.path.join(script_dir, '..', 'build', 'ellipsoid_data.csv')
+ellipsoid_data = np.loadtxt(ellipsoid_csv_path, delimiter=',')
+p_x = ellipsoid_data[0]
+p_y = ellipsoid_data[1]
+# A from CSV
+A = np.array([[ellipsoid_data[2], ellipsoid_data[3]],
+              [ellipsoid_data[4], ellipsoid_data[5]]])
+
+# Eigen-decomposition
+eigvals, eigvecs = np.linalg.eigh(A)
+order = np.argsort(eigvals)[::-1]  # largest first
+eigvals = eigvals[order]
+eigvecs = eigvecs[:, order]
+
+# Width and height are 2*sqrt(eigenvalues)
+width  = 2 * np.sqrt(eigvals[0])
+height = 2 * np.sqrt(eigvals[1])
+
+# Rotation angle
+angle = np.degrees(np.arctan2(eigvecs[1,0], eigvecs[0,0]))
+
+# Add ellipse patch
+ellipse = patches.Ellipse((p_x, p_y), width=width, height=height,
+                          angle=angle, edgecolor='blue', facecolor='none', linewidth=2)
+ax1.add_patch(ellipse)
+
 
 # Style adjustments
 ax1.spines['top'].set_visible(False)

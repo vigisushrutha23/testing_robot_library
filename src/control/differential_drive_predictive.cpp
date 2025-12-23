@@ -26,38 +26,38 @@ double       simulationTime   =  10.0;
 double       controlFrequency = 100.0;
 
 unsigned int simulationSteps  = 1000;
-unsigned int predictionSteps  =   50;
+unsigned int predictionSteps  =  100;
 
 int main(int argc, char **argv)
 {   
     // Set up the trajectory
-    RobotLibrary::Model::Pose2D startPose(0.0, 0.0, 0.0);
+    RobotLibrary::Model::Pose2D startPose(0.0, 0.0, 1.0);
     Eigen::Vector2d endPoint = {-1.0, 1.0};
     RobotLibrary::Trajectory::MinimumArcLength trajectory(startPose, endPoint, 1.0, simulationTime - 1.0);
     
     // Parameters for the model
     RobotLibrary::Model::DifferentialDriveParameters modelParameters;
-    modelParameters.inertia                = 0.5 * 50.0 * 0.25 * 0.25;                              // Rotational inertia (kg*m^2)
-    modelParameters.mass                   = 50.0;                                                  // Weight (kg)
+    modelParameters.inertia                = 0.5 * 20.0 * 0.25 * 0.25;                              // Rotational inertia (kg*m^2)
+    modelParameters.mass                   = 20.0;                                                  // Weight (kg)
     modelParameters.maxAngularAcceleration = 0.5;                                                   // Maximum rotational acceleration (rad/s/s)
     modelParameters.maxAngularVelocity     = 100.0 * M_PI / 30.0;                                   // Maximum rotational speed (rad/s)
-    modelParameters.maxLinearAcceleration  = 0.5;                                                  // Maximum forward acceleration (m/s/s)
-    modelParameters.maxLinearVelocity      = 2.0;                                                  // Maximum forward speed (m/s)
-    modelParameters.minimumSafeDistance    = 0.5;
+    modelParameters.maxLinearAcceleration  = 0.5;                                                   // Maximum forward acceleration (m/s/s)
+    modelParameters.maxLinearVelocity      = 2.0;                                                   // Maximum forward speed (m/s)
+    modelParameters.minimumSafeDistance    = 0.05;
     modelParameters.propagationUncertainty = Eigen::Matrix3d::Identity();                           // Uncertainty of configuration propagation in Kalman filter
     
     // Parameters for the predictive controller
     RobotLibrary::Control::DifferentialDrivePredictiveParameters controlParameters;
     controlParameters.controlFrequency        = controlFrequency;
-    controlParameters.exponent                =  0.01;                                              // Growth or decay of pose error weighting
+    controlParameters.exponent                = 0.005;                                              // Growth or decay of pose error weighting
     controlParameters.maximumControlStepNorm  = 1e-06;                                              // DDP algorithm terminates early if max. ||du|| is smaller than this
-    controlParameters.numberOfRecursions      = 25;                                                 // No. of forward & backward passes for the DDP algorithm
-    controlParameters.obstaclePotentialScalar = 5e-03;                                              // Scales the repulsion force
+    controlParameters.numberOfRecursions      = 50;                                                 // No. of forward & backward passes for the DDP algorithm
+    controlParameters.obstaclePotentialScalar = 1e00;                                               // Scales the repulsion force
     controlParameters.predictionSteps         = predictionSteps;                                    // Length of prediction horizon
    
-    controlParameters.poseErrorWeight << 2000.0,    0.0,  0.0,
-                                            0.0, 2000.0,  1.0,
-                                            0.0,    1.0,  5.0;
+    controlParameters.poseErrorWeight << 2000.0,    0.0,   0.0,
+                                            0.0, 2000.0, -00.0,
+                                            0.0,  -00.0,  10.0;
     
     SolverOptions<double> solverOptions;                                                            // Not currently being used
     
@@ -65,7 +65,7 @@ int main(int argc, char **argv)
                                                                   controlParameters,
                                                                   solverOptions);
  
-    RobotLibrary::Model::Pose2D actualPose(-0.1, 0.1, 0.0);                                          // Start offset from the trajectory
+    RobotLibrary::Model::Pose2D actualPose(0.0, 0.0, 1.0);                                          // Start offset from the trajectory
     
     Eigen::Vector2d controlInput = {0.0, 0.0};
     
@@ -73,11 +73,16 @@ int main(int argc, char **argv)
     
     // Set up obstacle(s)
     std::vector<std::vector<RobotLibrary::Model::Obstacle2D>> obstacles(simulationSteps+1);           // MUST be N+1
+    
+    double r_x = 0.20;
+    double r_y = 0.20;
+        
+    Eigen::Matrix2d shapeMatrix;
+    shapeMatrix << r_x * r_x,       0.0,
+                         0.0, r_y * r_y;
 
-
-    Eigen::Matrix2d shapeMatrix = 0.04 * Eigen::Matrix2d::Identity(); 
-
-    Eigen::Vector2d obs_velocity = {0.0,0.0};
+    Eigen::Vector2d obs_velocity = {0.0, 0.0};
+                      
     for (int i = 0; i < simulationSteps+1; ++i)
     {
         // NOTE: We need N+1 here since for u[0], ... , u[N-1], and x[1], ... , x[N]
@@ -87,7 +92,7 @@ int main(int argc, char **argv)
         
         obstacles[i].push_back(RobotLibrary::Model::Obstacle2D(std::move(ellipse)));                   // Move it in to the obstacle vector
         
-        obstacles[i].back().update_state(RobotLibrary::Model::Pose2D(0.60 + obs_velocity(0)*i/controlFrequency, 0.0 + obs_velocity(1)*i/controlFrequency, 0.0), Eigen::Vector3d::Zero()); // Translate in x direction
+        obstacles[i].back().update_state(RobotLibrary::Model::Pose2D(-0.10 + obs_velocity(0)*i/controlFrequency, 0.6 + obs_velocity(1)*i/controlFrequency, 0.0), Eigen::Vector3d::Zero()); // Translate in x direction
     }
 
 
@@ -96,7 +101,7 @@ int main(int argc, char **argv)
     std::vector<std::array<double,3>> actualConfiguration;   actualConfiguration.resize(simulationSteps);
     std::vector<std::array<double,2>> poseError;             poseError.resize(simulationSteps);
     std::vector<std::array<double,2>> controlInputs;         controlInputs.resize(simulationSteps);
-    std::vector<std::vector<double>> predictedConfiguration; predictedConfiguration.resize(simulationSteps);
+    std::vector<std::vector<double>>  predictedConfiguration; predictedConfiguration.resize(simulationSteps);
     
     // Run the simulation
     bool track_failure = false;
@@ -121,7 +126,7 @@ int main(int argc, char **argv)
         
             windowObstacles[j].push_back(RobotLibrary::Model::Obstacle2D(std::move(ellipse)));                   // Move it in to the obstacle vector
         
-            windowObstacles[j].back().update_state(RobotLibrary::Model::Pose2D(0.60 + obs_velocity(0)*i/controlFrequency, 0.0 + obs_velocity(1)*i/controlFrequency, 0.0), Eigen::Vector3d::Zero());
+            windowObstacles[j].back().update_state(RobotLibrary::Model::Pose2D(-0.10 + obs_velocity(0)*i/controlFrequency, 0.6 + obs_velocity(1)*i/controlFrequency, 0.0), Eigen::Vector3d::Zero());
             //windowObstacles.push_back(obstacles[i+j]);
         }
 
@@ -150,12 +155,7 @@ int main(int argc, char **argv)
         actualConfiguration[i]  = {actualPose.translation()[0], actualPose.translation()[1], actualPose.angle()};
         poseError[i]            = {(desiredStates[0].pose.translation() - controller.pose().translation()).norm(), abs(desiredStates[0].pose.angle() - controller.pose().angle())};                   
         controlInputs[i]        = {controlInput[0], controlInput[1]};
-        
-        for( int j = 0; j < predictionSteps; ++j)
-        {
-        
-        }
-        
+
         // For next loop
         controller.update_state(actualPose, controlInput);
         actualPose = controller.predicted_pose();                                                   // Propagate the state
@@ -215,6 +215,16 @@ int main(int argc, char **argv)
     }
     file.close();
     
+    
+    // Save ellipsoid data
+    file.open("ellipsoid_data.csv");
+        file << obstacles[0].back().pose().translation()[0] << ","
+             << obstacles[0].back().pose().translation()[1] << ","
+             << shapeMatrix(0,0) << ","
+             << shapeMatrix(0,1) << "," 
+             << shapeMatrix(1,0) << ","
+             << shapeMatrix(1,1) << "\n";
+    file.close();
     
     std::cout << "[INFO] [DIFFERENTIAL DRIVE PREDICTIVE CONTROL] Numerical simulation complete. "
               << "Data saved to .csv files for analysis.\n";
