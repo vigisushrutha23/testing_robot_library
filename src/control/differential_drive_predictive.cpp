@@ -105,6 +105,7 @@ int main(int argc, char **argv)
     
     // Run the simulation
     bool track_failure = false;
+    int end_index = 0;
     for (int i = 0; i < simulationSteps && ! track_failure; ++i)
     {
         double simTime = i / controlFrequency;                                                      // Dividing is more numerically stable
@@ -139,14 +140,22 @@ int main(int argc, char **argv)
             std::cerr <<"[ERROR] [DIFFERENTIAL DRIVE PREDICTIVE CONTROL] "
                                      "Failed to solve trajectory tracking:\n"
                                      << std::string(exception.what());
-                                     std::cout<<"\n\n Breaking";
+
+                        
              track_failure = true; 
-             desiredConfiguration.resize(i-1);
-             actualConfiguration.resize(i-1);
-             poseError.resize(i-1);
-             controlInputs.resize(i-1);
-             
-             std::cout<<"\n\n Breaking2";
+             if(i!=0)
+             {
+                desiredConfiguration.resize(i-1);
+                actualConfiguration.resize(i-1);
+                poseError.resize(i-1);
+                controlInputs.resize(i-1);
+                end_index = i-1;
+             }
+             else 
+             {
+                std::cout<<"\nNo Tracking Done";
+                return 0;
+             }   
              break;
         }
         
@@ -207,11 +216,13 @@ int main(int argc, char **argv)
 
     /* NOTE: This needs to be re-worked... indices have changed
     // Save the obstacle*/
+    std::cout<<"\n Rerached here1";
+    std::cout<<"\n Rerached here2";
     file.open("obstacle_data.csv");
     for(int i = 0; i < obstacles.size(); ++i)
     {
         file << (double)(i / controlFrequency);
-        file << "," << obstacles[i][0].pose().translation()(0) << "," << obstacles[i][0].pose().translation()(1) << "," << pow(shapeMatrix(0,0),0.5) << "," << pow(shapeMatrix(1,1),0.5) << "\n";
+        file << "," << obstacles[i][0].pose().translation()(0) << "," << obstacles[i][0].pose().translation()(1) << "," << 1/pow(shapeMatrix(0,0),0.5) << "," << 1/pow(shapeMatrix(1,1),0.5) << "\n";
     }
     file.close();
     
