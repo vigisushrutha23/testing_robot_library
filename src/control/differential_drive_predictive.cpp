@@ -26,7 +26,7 @@ double       simulationTime   =  10.0;
 double       controlFrequency = 100.0;
 
 unsigned int simulationSteps  = 1000;
-unsigned int predictionSteps  =  100;
+unsigned int predictionSteps  =  50;
 
 int main(int argc, char **argv)
 {   
@@ -51,8 +51,8 @@ int main(int argc, char **argv)
     controlParameters.controlFrequency        = controlFrequency;
     controlParameters.exponent                = 0.005;                                              // Growth or decay of pose error weighting
     controlParameters.maximumControlStepNorm  = 1e-06;                                              // DDP algorithm terminates early if max. ||du|| is smaller than this
-    controlParameters.numberOfRecursions      = 50;                                                 // No. of forward & backward passes for the DDP algorithm
-    controlParameters.obstaclePotentialScalar = 1e00;                                               // Scales the repulsion force
+    controlParameters.numberOfRecursions      = 100;                                                 // No. of forward & backward passes for the DDP algorithm
+    controlParameters.obstaclePotentialScalar = 200.0;                                               // Scales the repulsion force
     controlParameters.predictionSteps         = predictionSteps;                                    // Length of prediction horizon
    
     controlParameters.poseErrorWeight << 2000.0,    0.0,   0.0,
@@ -74,8 +74,8 @@ int main(int argc, char **argv)
     // Set up obstacle(s)
     std::vector<std::vector<RobotLibrary::Model::Obstacle2D>> obstacles(simulationSteps+1);           // MUST be N+1
     
-    double r_x = 0.20;
-    double r_y = 0.20;
+    double r_x = 0.10;
+    double r_y = 0.10;
         
     Eigen::Matrix2d shapeMatrix;
     shapeMatrix << r_x * r_x,       0.0,
@@ -92,7 +92,7 @@ int main(int argc, char **argv)
         
         obstacles[i].push_back(RobotLibrary::Model::Obstacle2D(std::move(ellipse)));                   // Move it in to the obstacle vector
         
-        obstacles[i].back().update_state(RobotLibrary::Model::Pose2D(-0.10 + obs_velocity(0)*i/controlFrequency, 0.6 + obs_velocity(1)*i/controlFrequency, 0.0), Eigen::Vector3d::Zero()); // Translate in x direction
+        obstacles[i].back().update_state(RobotLibrary::Model::Pose2D(-0.0 + obs_velocity(0)*i/controlFrequency, 0.6 + obs_velocity(1)*i/controlFrequency, 0.0), Eigen::Vector3d::Zero()); // Translate in x direction
     }
 
 
@@ -127,8 +127,7 @@ int main(int argc, char **argv)
         
             windowObstacles[j].push_back(RobotLibrary::Model::Obstacle2D(std::move(ellipse)));                   // Move it in to the obstacle vector
         
-            windowObstacles[j].back().update_state(RobotLibrary::Model::Pose2D(-0.10 + obs_velocity(0)*i/controlFrequency, 0.6 + obs_velocity(1)*i/controlFrequency, 0.0), Eigen::Vector3d::Zero());
-            //windowObstacles.push_back(obstacles[i+j]);
+            windowObstacles[j].back().update_state(RobotLibrary::Model::Pose2D(-0.0 + obs_velocity(0)*i/controlFrequency, 0.6 + obs_velocity(1)*i/controlFrequency, 0.0), Eigen::Vector3d::Zero());
         }
 
         try
@@ -222,7 +221,7 @@ int main(int argc, char **argv)
     for(int i = 0; i < obstacles.size(); ++i)
     {
         file << (double)(i / controlFrequency);
-        file << "," << obstacles[i][0].pose().translation()(0) << "," << obstacles[i][0].pose().translation()(1) << "," << 1/pow(shapeMatrix(0,0),0.5) << "," << 1/pow(shapeMatrix(1,1),0.5) << "\n";
+        file << "," << obstacles[i][0].pose().translation()(0) << "," << obstacles[i][0].pose().translation()(1) << "," << pow(shapeMatrix(0,0),0.5) << "," << pow(shapeMatrix(1,1),0.5) << "\n";
     }
     file.close();
     
