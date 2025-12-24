@@ -81,7 +81,7 @@ int main(int argc, char **argv)
     shapeMatrix << r_x * r_x,       0.0,
                          0.0, r_y * r_y;
 
-    Eigen::Vector2d obs_velocity = {0.0, 0.0};
+    Eigen::Vector2d obs_velocity = {-0.0, 0.2};
                       
     for (int i = 0; i < simulationSteps+1; ++i)
     {
@@ -92,7 +92,7 @@ int main(int argc, char **argv)
         
         obstacles[i].push_back(RobotLibrary::Model::Obstacle2D(std::move(ellipse)));                   // Move it in to the obstacle vector
         
-        obstacles[i].back().update_state(RobotLibrary::Model::Pose2D(-0.1 + obs_velocity(0)*i/controlFrequency, 0.6 + obs_velocity(1)*i/controlFrequency, 0.0), Eigen::Vector3d::Zero()); // Translate in x direction
+        obstacles[i].back().update_state(RobotLibrary::Model::Pose2D(-0.3 + obs_velocity(0)*i/controlFrequency, -0.5  + obs_velocity(1)*i/controlFrequency, 0.0), Eigen::Vector3d::Zero()); // Translate in x direction
     }
 
 
@@ -127,7 +127,7 @@ int main(int argc, char **argv)
         
             windowObstacles[j].push_back(RobotLibrary::Model::Obstacle2D(std::move(ellipse)));                   // Move it in to the obstacle vector
         
-            windowObstacles[j].back().update_state(RobotLibrary::Model::Pose2D(-0.1 + obs_velocity(0)*i/controlFrequency, 0.6 + obs_velocity(1)*i/controlFrequency, 0.0), Eigen::Vector3d::Zero());
+            windowObstacles[j].back().update_state(RobotLibrary::Model::Pose2D(-0.3 + obs_velocity(0)*(i+j)/controlFrequency, -0.5 + obs_velocity(1)*(i+j)/controlFrequency, 0.0), Eigen::Vector3d::Zero());
         }
 
         try
