@@ -10,7 +10,10 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import os
 import numpy as np
+from functools import reduce
+from matplotlib.animation import FuncAnimation
 
+plt.close('all')
 phi = 1.618
 
 # Get the directory of the current script
@@ -36,12 +39,12 @@ obstacle_csv_path = os.path.join(script_dir, '..', 'build', 'obstacle_data.csv')
 obstacle_exists = os.path.exists(obstacle_csv_path)
 
 if obstacle_exists == True:
-    obstacle_first_row = np.loadtxt(obstacle_csv_path, delimiter=',', max_rows=1)
-    time_obs = obstacle_first_row[0]
-    center_x = obstacle_first_row[1]
-    center_y = obstacle_first_row[2]
-    radius_x = obstacle_first_row[3]
-    radius_y = obstacle_first_row[4]
+    obstacle_rows = np.loadtxt(obstacle_csv_path, delimiter=',')
+   # time_obs = obstacle_first_row[0]
+    #center_x = obstacle_first_row[1]
+    #center_y = obstacle_first_row[2]
+    #radius_x = obstacle_first_row[3]
+    #radius_y = obstacle_first_row[4]
 
 # Plot desired and actual paths
 fig1, ax1 = plt.subplots()
@@ -50,11 +53,11 @@ ax1.plot(x_desired, y_desired, label='Desired', color='black')
 ax1.plot(x_actual,  y_actual,  label='Actual',  color='red')
 
 # Plot the obstacle ellipsoid as an ellipse patch
-if obstacle_exists:
-    ellipse = patches.Ellipse((center_x, center_y), width=2*radius_x, height=2*radius_y,
-                            edgecolor='blue', facecolor='none', linewidth=2, label='Obstacle Ellipsoid')
-    ax1.add_patch(ellipse)
-    ax1.text(center_x, center_y, f't={time_obs:.2f}', color='blue', fontsize=8)
+#if obstacle_exists:
+#    ellipse = patches.Ellipse((center_x, center_y), width=2*radius_x, height=2*radius_y,
+#                            edgecolor='blue', facecolor='none', linewidth=2, label='Obstacle Ellipsoid')
+#    ax1.add_patch(ellipse)
+#    ax1.text(center_x, center_y, f't={time_obs:.2f}', color='blue', fontsize=8)
 
 # Arrows for desired path start and end
 arrow_length = 0.05
@@ -104,6 +107,34 @@ ax1.set_xlabel('X Position')
 ax1.set_ylabel('Y Position')
 ax1.set_title('Cartesian Path')
 ax1.axis('equal')
+robot_ellipse = None
+obstacle_ellipse = None
+def animate(i):
+    global robot_ellipse
+    global obstacle_ellipse
+    global obstacle_rows
+    if robot_ellipse is not None:
+        robot_ellipse.remove()
+    if obstacle_exists:
+        if obstacle_ellipse is not None:
+            obstacle_ellipse.remove()
+        time_obs = obstacle_rows[i,0]
+        center_x = obstacle_rows[i,1]
+        center_y = obstacle_rows[i,2]
+        radius_x = obstacle_rows[i,3]
+        radius_y = obstacle_rows[i,4]
+        ellipse = patches.Ellipse((center_x, center_y), width=2*radius_x, height=2*radius_y,
+                                edgecolor='blue', facecolor='none', linewidth=2, label='Obstacle Ellipsoid')
+        obstacle_ellipse = ax1.add_patch(ellipse)
+    r_ellipse = patches.Ellipse((x_actual[i], y_actual[i]), width=2*0.1, height=2*0.05, angle = np.degrees(heading_actual[i])-90,
+                                edgecolor='red', facecolor='none', linewidth=2, label='Robot Ellipsoid')
+    robot_ellipse = ax1.add_patch(r_ellipse)
+    return [robot_ellipse, obstacle_ellipse]
+anim = FuncAnimation(fig1, animate,frames = len(x_actual), interval = 10, repeat = False, cache_frame_data = False )
+anim
+plt.legend(loc="upper left")
+plt.show()
+
 
 ### Load control input data
 control_csv_path = os.path.join(script_dir, '..', 'build', 'control_input_data.csv')
