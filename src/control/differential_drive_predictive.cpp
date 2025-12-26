@@ -56,7 +56,7 @@ int main(int argc, char **argv)
     controlParameters.exponent                = 0.005;                                              // Growth or decay of pose error weighting
     controlParameters.maximumControlStepNorm  = 1e-06;                                              // DDP algorithm terminates early if max. ||du|| is smaller than this
     controlParameters.numberOfRecursions      = 100;                                                 // No. of forward & backward passes for the DDP algorithm
-    controlParameters.obstaclePotentialScalar = 50.0;                                               // Scales the repulsion force
+    controlParameters.obstaclePotentialScalar = 30.0;                                               // Scales the repulsion force
     controlParameters.predictionSteps         = predictionSteps;                                    // Length of prediction horizon
    
     controlParameters.poseErrorWeight << 2000.0,    0.0,   0.0,
@@ -96,7 +96,7 @@ int main(int argc, char **argv)
         
         obstacles[i].push_back(RobotLibrary::Model::Obstacle2D(std::move(ellipse)));                   // Move it in to the obstacle vector
         
-        obstacles[i].back().update_state(RobotLibrary::Model::Pose2D(-0.4 + obs_velocity(0)*i/controlFrequency, 0.7  + obs_velocity(1)*i/controlFrequency, 0.0), Eigen::Vector3d::Zero()); // Translate in x direction
+        obstacles[i].back().update_state(RobotLibrary::Model::Pose2D(-0.7 + obs_velocity(0)*i/controlFrequency, 0.5  + obs_velocity(1)*i/controlFrequency, 0.0), Eigen::Vector3d::Zero()); // Translate in x direction
     }
 
 
@@ -131,7 +131,7 @@ int main(int argc, char **argv)
         
             windowObstacles[j].push_back(RobotLibrary::Model::Obstacle2D(std::move(ellipse)));                   // Move it in to the obstacle vector
         
-            windowObstacles[j].back().update_state(RobotLibrary::Model::Pose2D(-0.4 + obs_velocity(0)*(i+j)/controlFrequency, 0.7 + obs_velocity(1)*(i+j)/controlFrequency, 0.0), Eigen::Vector3d::Zero());
+            windowObstacles[j].back().update_state(RobotLibrary::Model::Pose2D(-0.7 + obs_velocity(0)*(i+j)/controlFrequency, 0.5 + obs_velocity(1)*(i+j)/controlFrequency, 0.0), Eigen::Vector3d::Zero());
         }
 
         try

@@ -106,8 +106,8 @@ ax1.grid(False)
 ax1.set_xlabel('X Position')
 ax1.set_ylabel('Y Position')
 ax1.set_title('Cartesian Path')
-ax1.set_xlim([-1.3,0.6])
-ax1.set_ylim([-0.2,1.3])
+ax1.set_xlim([-1.5,0.6])
+ax1.set_ylim([-0.2,1.8])
 #ax1.axis('equal')
 robot_ellipse = None
 obstacle_ellipse = None
