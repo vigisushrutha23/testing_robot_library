@@ -106,7 +106,9 @@ ax1.grid(False)
 ax1.set_xlabel('X Position')
 ax1.set_ylabel('Y Position')
 ax1.set_title('Cartesian Path')
-ax1.axis('equal')
+ax1.set_xlim([-1.3,0.6])
+ax1.set_ylim([-0.2,1.3])
+#ax1.axis('equal')
 robot_ellipse = None
 obstacle_ellipse = None
 def animate(i):
@@ -126,7 +128,7 @@ def animate(i):
         ellipse = patches.Ellipse((center_x, center_y), width=2*radius_x, height=2*radius_y,
                                 edgecolor='blue', facecolor='none', linewidth=2, label='Obstacle Ellipsoid')
         obstacle_ellipse = ax1.add_patch(ellipse)
-    r_ellipse = patches.Ellipse((x_actual[i], y_actual[i]), width=2*0.1, height=2*0.05, angle = np.degrees(heading_actual[i])-90,
+    r_ellipse = patches.Ellipse((x_actual[i], y_actual[i]), width=2*0.4, height=2*0.3, angle = np.degrees(heading_actual[i])-90,
                                 edgecolor='red', facecolor='none', linewidth=2, label='Robot Ellipsoid')
     robot_ellipse = ax1.add_patch(r_ellipse)
     return [robot_ellipse, obstacle_ellipse]

@@ -34,6 +34,8 @@ int main(int argc, char **argv)
     RobotLibrary::Model::Pose2D startPose(0.0, 0.0, 1.0);
     Eigen::Vector2d endPoint = {-1.0, 1.0};
     RobotLibrary::Trajectory::MinimumArcLength trajectory(startPose, endPoint, 1.0, simulationTime - 1.0);
+    Eigen::Vector3d robotLengths = {-0.2,0.0,0.2};
+    Eigen::Vector3d robotRadii = {0.2,0.3,0.2};
     
     // Parameters for the model
     RobotLibrary::Model::DifferentialDriveParameters modelParameters;
@@ -45,14 +47,16 @@ int main(int argc, char **argv)
     modelParameters.maxLinearVelocity      = 2.0;                                                   // Maximum forward speed (m/s)
     modelParameters.minimumSafeDistance    = 0.1;
     modelParameters.propagationUncertainty = Eigen::Matrix3d::Identity();                           // Uncertainty of configuration propagation in Kalman filter
-    
+    modelParameters.robotLengths           = robotLengths;
+    modelParameters.robotRadii             = robotRadii;
+
     // Parameters for the predictive controller
     RobotLibrary::Control::DifferentialDrivePredictiveParameters controlParameters;
     controlParameters.controlFrequency        = controlFrequency;
     controlParameters.exponent                = 0.005;                                              // Growth or decay of pose error weighting
     controlParameters.maximumControlStepNorm  = 1e-06;                                              // DDP algorithm terminates early if max. ||du|| is smaller than this
     controlParameters.numberOfRecursions      = 100;                                                 // No. of forward & backward passes for the DDP algorithm
-    controlParameters.obstaclePotentialScalar = 20.0;                                               // Scales the repulsion force
+    controlParameters.obstaclePotentialScalar = 50.0;                                               // Scales the repulsion force
     controlParameters.predictionSteps         = predictionSteps;                                    // Length of prediction horizon
    
     controlParameters.poseErrorWeight << 2000.0,    0.0,   0.0,
@@ -74,14 +78,14 @@ int main(int argc, char **argv)
     // Set up obstacle(s)
     std::vector<std::vector<RobotLibrary::Model::Obstacle2D>> obstacles(simulationSteps+1);           // MUST be N+1
     
-    double r_x = 0.10;
-    double r_y = 0.10;
+    double r_x = 0.30;
+    double r_y = 0.30;
         
     Eigen::Matrix2d shapeMatrix;
     shapeMatrix << r_x * r_x,       0.0,
                          0.0, r_y * r_y;
 
-    Eigen::Vector2d obs_velocity = {-0.0, 0.2};
+    Eigen::Vector2d obs_velocity = {-0.0, 0.0};
                       
     for (int i = 0; i < simulationSteps+1; ++i)
     {
@@ -92,7 +96,7 @@ int main(int argc, char **argv)
         
         obstacles[i].push_back(RobotLibrary::Model::Obstacle2D(std::move(ellipse)));                   // Move it in to the obstacle vector
         
-        obstacles[i].back().update_state(RobotLibrary::Model::Pose2D(-0.3 + obs_velocity(0)*i/controlFrequency, -0.5  + obs_velocity(1)*i/controlFrequency, 0.0), Eigen::Vector3d::Zero()); // Translate in x direction
+        obstacles[i].back().update_state(RobotLibrary::Model::Pose2D(-0.4 + obs_velocity(0)*i/controlFrequency, 0.7  + obs_velocity(1)*i/controlFrequency, 0.0), Eigen::Vector3d::Zero()); // Translate in x direction
     }
 
 
@@ -127,7 +131,7 @@ int main(int argc, char **argv)
         
             windowObstacles[j].push_back(RobotLibrary::Model::Obstacle2D(std::move(ellipse)));                   // Move it in to the obstacle vector
         
-            windowObstacles[j].back().update_state(RobotLibrary::Model::Pose2D(-0.3 + obs_velocity(0)*(i+j)/controlFrequency, -0.5 + obs_velocity(1)*(i+j)/controlFrequency, 0.0), Eigen::Vector3d::Zero());
+            windowObstacles[j].back().update_state(RobotLibrary::Model::Pose2D(-0.4 + obs_velocity(0)*(i+j)/controlFrequency, 0.7 + obs_velocity(1)*(i+j)/controlFrequency, 0.0), Eigen::Vector3d::Zero());
         }
 
         try
