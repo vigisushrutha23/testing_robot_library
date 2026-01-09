@@ -57,3 +57,6 @@ target_link_libraries(cartesian_velocity_control PRIVATE RobotLibrary::RobotLibr
 
 add_executable(differential_drive_predictive src/control/differential_drive_predictive.cpp)
 target_link_libraries(differential_drive_predictive PRIVATE RobotLibrary::RobotLibrary)
+
+add_executable(ddp_three_circle_footprint src/control/ddp_three_circle_footprint.cpp)
+target_link_libraries(ddp_three_circle_footprint PRIVATE RobotLibrary::RobotLibrary)
