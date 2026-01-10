@@ -22,16 +22,16 @@
 #include <RobotLibrary/Trajectory/MinimumArcLength.h>
 
 // Simulation parameters
-double       simulationTime   =  10.0;
-double       controlFrequency = 100.0;
+double simulationTime   =  20.0;
+double controlFrequency = 100.0;
 
-unsigned int simulationSteps  = 1000;
-unsigned int predictionSteps  =  50;
+unsigned int simulationSteps  = 2000;
+unsigned int predictionSteps  =  100;
 
 int main(int argc, char **argv)
 {   
     // Set up the trajectory
-    RobotLibrary::Model::Pose2D startPose(0.0, 0.0, 1.0);
+    RobotLibrary::Model::Pose2D startPose(0.0, 0.0, 0.0);
     Eigen::Vector2d endPoint = {-1.0, 1.0};
     RobotLibrary::Trajectory::MinimumArcLength trajectory(startPose, endPoint, 1.0, simulationTime - 1.0);
     Eigen::Vector3d robotLengths = {-0.2,0.0,0.2};
@@ -41,9 +41,9 @@ int main(int argc, char **argv)
     RobotLibrary::Model::DifferentialDriveParameters modelParameters;
     modelParameters.inertia                = 0.5 * 20.0 * 0.25 * 0.25;                              // Rotational inertia (kg*m^2)
     modelParameters.mass                   = 20.0;                                                  // Weight (kg)
-    modelParameters.maxAngularAcceleration = 0.5;                                                   // Maximum rotational acceleration (rad/s/s)
+    modelParameters.maxAngularAcceleration = 1.0;                                                   // Maximum rotational acceleration (rad/s/s)
     modelParameters.maxAngularVelocity     = 100.0 * M_PI / 30.0;                                   // Maximum rotational speed (rad/s)
-    modelParameters.maxLinearAcceleration  = 0.5;                                                   // Maximum forward acceleration (m/s/s)
+    modelParameters.maxLinearAcceleration  = 1.0;                                                   // Maximum forward acceleration (m/s/s)
     modelParameters.maxLinearVelocity      = 2.0;                                                   // Maximum forward speed (m/s)
     modelParameters.minimumSafeDistance    = 0.1;
     modelParameters.propagationUncertainty = Eigen::Matrix3d::Identity();                           // Uncertainty of configuration propagation in Kalman filter
@@ -53,15 +53,15 @@ int main(int argc, char **argv)
     // Parameters for the predictive controller
     RobotLibrary::Control::DifferentialDrivePredictiveParameters controlParameters;
     controlParameters.controlFrequency        = controlFrequency;
-    controlParameters.exponent                = 0.005;                                              // Growth or decay of pose error weighting
-    controlParameters.maximumControlStepNorm  = 1e-06;                                              // DDP algorithm terminates early if max. ||du|| is smaller than this
-    controlParameters.numberOfRecursions      = 100;                                                 // No. of forward & backward passes for the DDP algorithm
-    controlParameters.obstaclePotentialScalar = 30.0;                                               // Scales the repulsion force
+    controlParameters.exponent                = 1e-02;                                              // Growth or decay of pose error weighting
+    controlParameters.maximumControlStepNorm  = 1e-04;                                              // DDP algorithm terminates early if max. ||du|| is smaller than this
+    controlParameters.numberOfRecursions      = 50;                                                 // No. of forward & backward passes for the DDP algorithm
+    controlParameters.obstaclePotentialScalar = 1e-01;                                              // Scales the repulsion force
     controlParameters.predictionSteps         = predictionSteps;                                    // Length of prediction horizon
-   
-    controlParameters.poseErrorWeight << 2000.0,    0.0,   0.0,
-                                            0.0, 2000.0, -00.0,
-                                            0.0,  -00.0,  10.0;
+  
+    controlParameters.poseErrorWeight <<  2e00,    0.0,    0.0,
+                                           0.0,   2e00, -9e-04,
+                                           0.0, -9e-04,  1e-03;
     
     SolverOptions<double> solverOptions;                                                            // Not currently being used
     
@@ -69,25 +69,25 @@ int main(int argc, char **argv)
                                                                   controlParameters,
                                                                   solverOptions);
  
-    RobotLibrary::Model::Pose2D actualPose(0.0, 0.0, 1.0);                                          // Start offset from the trajectory
+    RobotLibrary::Model::Pose2D actualPose(0.0, 0.0, 0.0);                                          // Start offset from the trajectory
     
     Eigen::Vector2d controlInput = {0.0, 0.0};
     
     controller.update_state(actualPose, controlInput);
     
     // Set up obstacle(s)
-    std::vector<std::vector<RobotLibrary::Model::Obstacle2D>> obstacles(simulationSteps+1);           // MUST be N+1
+    std::vector<std::vector<RobotLibrary::Model::Obstacle2D>> obstacles(simulationSteps+1);         // MUST be N+1
     
     double r_x = 0.30;
     double r_y = 0.30;
         
     Eigen::Matrix2d shapeMatrix;
     shapeMatrix << r_x * r_x,       0.0,
-                         0.0, r_y * r_y;
-
+                         0.0, r_y * r_y;               
+    
     Eigen::Vector2d obs_velocity = {-0.0, 0.0};
-                      
-    for (int i = 0; i < simulationSteps+1; ++i)
+
+    for (int i = 0; i < simulationSteps + 1; ++i)
     {
         // NOTE: We need N+1 here since for u[0], ... , u[N-1], and x[1], ... , x[N]
         // NOTE: We require the unique_ptr for polymorphism
@@ -98,7 +98,6 @@ int main(int argc, char **argv)
         
         obstacles[i].back().update_state(RobotLibrary::Model::Pose2D(-0.7 + obs_velocity(0)*i/controlFrequency, 0.5  + obs_velocity(1)*i/controlFrequency, 0.0), Eigen::Vector3d::Zero()); // Translate in x direction
     }
-
 
     // Set up data arrays for analysis
     std::vector<std::array<double,3>> desiredConfiguration;  desiredConfiguration.resize(simulationSteps);
@@ -140,25 +139,10 @@ int main(int argc, char **argv)
         }
         catch (const std::exception &exception)
         {
-            std::cerr <<"[ERROR] [DIFFERENTIAL DRIVE PREDICTIVE CONTROL] "
-                                     "Failed to solve trajectory tracking:\n"
-                                     << std::string(exception.what());
-
-                        
-             track_failure = true; 
-             if(i!=0)
-             {
-                desiredConfiguration.resize(i-1);
-                actualConfiguration.resize(i-1);
-                poseError.resize(i-1);
-                controlInputs.resize(i-1);
-                end_index = i-1;
-             }
-             else 
-             {
-                std::cout<<"\nNo Tracking Done";
-                return 0;
-             }   
+            throw std::runtime_error("[ERROR] [DIFFERENTIAL DRIVE PREDICTIVE CONTROL] "
+                                     "Failed to solve trajectory tracking on simulation step " + std::to_string(i+1) + ":\n"
+                                     + std::string(exception.what()));
+             
              break;
         }
         
