@@ -34,7 +34,7 @@ int main(int argc, char **argv)
     RobotLibrary::Model::Pose2D startPose(0.0, 0.0, 1.0);
     Eigen::Vector2d endPoint = {-1.0, 1.0};
     RobotLibrary::Trajectory::MinimumArcLength trajectory(startPose, endPoint, 1.0, simulationTime - 1.0);
-    Eigen::Vector3d robotLengths = {-0.2, 0.0, 0.2};
+    Eigen::Vector3d robotLengths = {-0.15, 0.0, 0.15};
     Eigen::Vector3d robotRadii = {0.2, 0.3, 0.2};
     
     // Parameters for the model
@@ -45,7 +45,7 @@ int main(int argc, char **argv)
     modelParameters.maxAngularVelocity     = 100.0 * M_PI / 30.0;                                   // Maximum rotational speed (rad/s)
     modelParameters.maxLinearAcceleration  = 0.5;                                                   // Maximum forward acceleration (m/s/s)
     modelParameters.maxLinearVelocity      = 2.0;                                                   // Maximum forward speed (m/s)
-    modelParameters.minimumSafeDistance    = 0.05;
+    modelParameters.minimumSafeDistance    = 0.1;
     modelParameters.propagationUncertainty = Eigen::Matrix3d::Identity();                           // Uncertainty of configuration propagation in Kalman filter
     modelParameters.robotLengths           = robotLengths;
     modelParameters.robotRadii             = robotRadii;
@@ -56,7 +56,7 @@ int main(int argc, char **argv)
     controlParameters.exponent                = 1e-02;                                              // Growth or decay of pose error weighting
     controlParameters.maximumControlStepNorm  = 1e-04;                                              // DDP algorithm terminates early if max. ||du|| is smaller than this
     controlParameters.numberOfRecursions      = 50;                                                 // No. of forward & backward passes for the DDP algorithm
-    controlParameters.obstaclePotentialScalar = 1e-03;                                              // Scales the repulsion force
+    controlParameters.obstaclePotentialScalar = 2e-03;                                              // Scales the repulsion force
     controlParameters.predictionSteps         = predictionSteps;                                    // Length of prediction horizon
   
     controlParameters.poseErrorWeight <<  2e00,    0.0,    0.0,
